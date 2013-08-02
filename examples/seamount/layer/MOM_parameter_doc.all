@@ -605,6 +605,9 @@ CORIOLIS_EN_DIS = True          !   [Boolean] default = False
                                 ! If true, two estimates of the thickness fluxes are used
                                 ! to estimate the Coriolis term, and the one that
                                 ! dissipates energy relative to the other one is used.
+UPWIND_PV = False               !   [Boolean] default = False
+                                ! If true, the PV in the SADOURNY75_ENERGY scheme is
+                                ! upwind biased, reminiscent of APV (anticipated PV).
 CORIOLIS_SCHEME = "SADOURNY75_ENERGY" ! default = "SADOURNY75_ENERGY"
                                 ! CORIOLIS_SCHEME selects the discretization for the
                                 ! Coriolis terms. Valid values are:

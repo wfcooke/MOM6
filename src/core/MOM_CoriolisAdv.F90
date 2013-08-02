@@ -127,6 +127,8 @@ type, public :: CoriolisAdv_CS ; private
                              ! relative to the other one is used.  This is only
                              ! available at present if Coriolis scheme is
                              ! SADOURNY75_ENERGY.
+  logical :: upwindPV        ! Upwind biases the PV in the SADOURNY75_ENERGY
+                             ! scheme, reminiscent of APV.
   type(time_type), pointer :: Time ! A pointer to the ocean model's clock.
   type(diag_ctrl), pointer :: diag ! A structure that is used to regulate the
                              ! timing of diagnostic output.
@@ -284,7 +286,11 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS, timestep)
          "MOM_CoriolisAdv: Module must be initialized before it is used.")
 
   Isq = G%IscB ; Ieq = G%IecB ; Jsq = G%JscB ; Jeq = G%JecB ; nz = G%ke
-  qHalo = 2
+  if (CS%upwindPV) then
+   qHalo = 2
+  else
+   qHalo = 1
+  endif
   if (Isq-qHalo<G%IsdB) call MOM_error(FATAL, &
          "MOM_CoriolisAdv: halo is not wide enough to compute upwind biased PV.")
   deltaT = 0.
@@ -351,41 +357,43 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS, timestep)
       if (ASSOCIATED(AD%rv_x_v) .or. ASSOCIATED(AD%rv_x_u)) &
         q2(I,J) = relative_vorticity * Ih
     enddo ; enddo
-    do J=Jsq-1,Jeq+1 ; do I=Isq-1,Ieq+1
-      Cu = deltaT * (uh(I,j+1,k) + uh(I,j,k))
-      qxy = h_neglect * G%areaBu(I,J)
-      if (Cu > 0.) then
-        Cu = Cu / ( ( h(i,j,k)*G%areaT(i,j) + h(i,j+1,k)*G%areaT(i,j+1) ) + qxy )
-      else ! Cu < 0
-        Cu = Cu / ( ( h(i+1,j,k)*G%areaT(i+1,j) + h(i+1,j+1,k)*G%areaT(i+1,j+1) ) + qxy )
-      endif
-      Cv = deltaT * (vh(i+1,J,k) + vh(i,J,k))
-      if (Cv > 0.) then
-        Cv = Cv / ( ( h(i,j,k)*G%areaT(i,j) + h(i+1,j,k)*G%areaT(i+1,j) ) + qxy )
-      else ! Cv < 0
-        Cv = Cv / ( ( h(i,j+1,k)*G%areaT(i,j+1) + h(i+1,j+1,k)*G%areaT(i+1,j+1) ) + qxy )
-      endif
-      if (Cu >= 0.) then
-        if (Cv >= 0.) then
-          qxy = q(I-1,J-1) ; qx0 = q(I-1,J) ; q0y = q(I,J-1)
-        else ! Cv < 0
-          qxy = q(I-1,J+1) ; qx0 = q(I-1,J) ; q0y = q(I,J+1)
+    if (CS%upwindPV) then
+      do J=Jsq-1,Jeq+1 ; do I=Isq-1,Ieq+1
+        Cu = deltaT * (uh(I,j+1,k) + uh(I,j,k))
+        qxy = h_neglect * G%areaBu(I,J)
+        if (Cu > 0.) then
+          Cu = Cu / ( ( h(i,j,k)*G%areaT(i,j) + h(i,j+1,k)*G%areaT(i,j+1) ) + qxy )
+        else ! Cu < 0
+          Cu = Cu / ( ( h(i+1,j,k)*G%areaT(i+1,j) + h(i+1,j+1,k)*G%areaT(i+1,j+1) ) + qxy )
         endif
-      else ! Cu < 0
-        if (Cv >= 0.) then
-          qxy = q(I+1,J-1) ; qx0 = q(I+1,J) ; q0y = q(I,J-1)
+        Cv = deltaT * (vh(i+1,J,k) + vh(i,J,k))
+        if (Cv > 0.) then
+          Cv = Cv / ( ( h(i,j,k)*G%areaT(i,j) + h(i+1,j,k)*G%areaT(i+1,j) ) + qxy )
         else ! Cv < 0
-          qxy = q(I+1,J+1) ; qx0 = q(I+1,J) ; q0y = q(I,J+1)
+          Cv = Cv / ( ( h(i,j+1,k)*G%areaT(i,j+1) + h(i+1,j+1,k)*G%areaT(i+1,j+1) ) + qxy )
         endif
-      endif
-      Cu = min( abs(Cu), 0.5 ) ! Bound Cu and turn into CFL>0
-      Cv = min( abs(Cv), 0.5 ) ! Bound Cv and turn into CFL>0
-      ! Note that this expression should be rearranged to give the same
-      ! answers under a 90 degree rotation by pairing the diagonals. --AJA
-      qBiased(I,J) = ( (1.-Cu)*q(I,J) + Cu*qx0 ) * (1.-Cv) &
-                   + ( (1.-Cu)*q0y    + Cu*qxy ) * Cv
-     !qBiased(I,J) = q(I,J)
-    enddo ; enddo
+        if (Cu >= 0.) then
+          if (Cv >= 0.) then
+            qxy = q(I-1,J-1) ; qx0 = q(I-1,J) ; q0y = q(I,J-1)
+          else ! Cv < 0
+            qxy = q(I-1,J+1) ; qx0 = q(I-1,J) ; q0y = q(I,J+1)
+          endif
+        else ! Cu < 0
+          if (Cv >= 0.) then
+            qxy = q(I+1,J-1) ; qx0 = q(I+1,J) ; q0y = q(I,J-1)
+          else ! Cv < 0
+            qxy = q(I+1,J+1) ; qx0 = q(I+1,J) ; q0y = q(I,J+1)
+          endif
+        endif
+        Cu = min( abs(Cu), 0.5 ) ! Bound Cu and turn into CFL>0
+        Cv = min( abs(Cv), 0.5 ) ! Bound Cv and turn into CFL>0
+        ! Note that this expression should be rearranged to give the same
+        ! answers under a 90 degree rotation by pairing the diagonals. --AJA
+        qBiased(I,J) = ( (1.-Cu)*q(I,J) + Cu*qx0 ) * (1.-Cv) &
+                     + ( (1.-Cu)*q0y    + Cu*qxy ) * Cv
+       !qBiased(I,J) = q(I,J)
+      enddo ; enddo
+    endif
 
 !    a, b, c, and d are combinations of neighboring potential
 !  vorticities which form the Arakawa and Hsu vorticity advection
@@ -535,12 +543,21 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS, timestep)
           CAu(I,j,k) = 0.25 * G%IdxCu(I,j) * (temp1 + temp2)
         enddo ; enddo
       else
-        ! Energy conserving scheme, Sadourny 1975
-        do j=js,je ; do I=Isq,Ieq
-          CAu(I,j,k) = 0.25 * &
-            (qBiased(I,J) * (vh(i+1,J,k) + vh(i,J,k)) + &
-             qBiased(I,J-1) * (vh(i,J-1,k) + vh(i+1,J-1,k))) * G%IdxCu(i,j)
-        enddo ; enddo
+        if (CS%upwindPV) then
+          ! Energy conserving scheme with upwind biased PV
+          do j=js,je ; do I=Isq,Ieq
+            CAu(I,j,k) = 0.25 * &
+              (qBiased(I,J) * (vh(i+1,J,k) + vh(i,J,k)) + &
+               qBiased(I,J-1) * (vh(i,J-1,k) + vh(i+1,J-1,k))) * G%IdxCu(i,j)
+          enddo ; enddo
+        else
+          ! Energy conserving scheme, Sadourny 1975
+          do j=js,je ; do I=Isq,Ieq
+            CAu(I,j,k) = 0.25 * &
+              (q(I,J) * (vh(i+1,J,k) + vh(i,J,k)) + &
+               q(I,J-1) * (vh(i,J-1,k) + vh(i+1,J-1,k))) * G%IdxCu(i,j)
+          enddo ; enddo
+        endif
       endif
     elseif (CS%Coriolis_Scheme == SADOURNY75_ENSTRO) then
       do j=js,je ; do I=Isq,Ieq
@@ -644,12 +661,21 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS, timestep)
           CAv(i,J,k) = - 0.25 * G%IdyCv(i,J) * (temp1 + temp2)
         enddo ; enddo
       else
-        ! Energy conserving scheme, Sadourny 1975
-        do J=Jsq,Jeq ; do i=is,ie
-          CAv(i,J,k) = - 0.25* &
-              (qBiased(I-1,J)*(uh(I-1,j,k) + uh(I-1,j+1,k)) + &
-               qBiased(I,J)*(uh(I,j,k) + uh(I,j+1,k))) * G%IdyCv(i,J)
-        enddo ; enddo
+        if (CS%upwindPV) then
+          ! Energy conserving scheme with upwind biased PV
+          do J=Jsq,Jeq ; do i=is,ie
+            CAv(i,J,k) = - 0.25* &
+                (qBiased(I-1,J)*(uh(I-1,j,k) + uh(I-1,j+1,k)) + &
+                 qBiased(I,J)*(uh(I,j,k) + uh(I,j+1,k))) * G%IdyCv(i,J)
+          enddo ; enddo
+        else
+          ! Energy conserving scheme, Sadourny 1975
+          do J=Jsq,Jeq ; do i=is,ie
+            CAv(i,J,k) = - 0.25* &
+                (q(I-1,J)*(uh(I-1,j,k) + uh(I-1,j+1,k)) + &
+                 q(I,J)*(uh(I,j,k) + uh(I,j+1,k))) * G%IdyCv(i,J)
+          enddo ; enddo
+        endif
       endif
     elseif (CS%Coriolis_Scheme == SADOURNY75_ENSTRO) then
       do J=Jsq,Jeq ; do i=is,ie
@@ -910,11 +936,14 @@ subroutine CoriolisAdv_init(Time, G, param_file, diag, AD, CS)
                  "cleaner than the no slip BCs. The use of free slip BCs \n"//&
                  "is strongly encouraged, and no slip BCs are not used with \n"//&
                  "the biharmonic viscosity.", default=.false.)
-
   call get_param(param_file, mod, "CORIOLIS_EN_DIS", CS%Coriolis_En_Dis, &
                  "If true, two estimates of the thickness fluxes are used \n"//&
                  "to estimate the Coriolis term, and the one that \n"//&
                  "dissipates energy relative to the other one is used.", &
+                 default=.false.)
+  call get_param(param_file, mod, "UPWIND_PV", CS%upwindPV, &
+                 "If true, the PV in the SADOURNY75_ENERGY scheme is\n"//&
+                 "upwind biased, reminiscent of APV (anticipated PV).",  &
                  default=.false.)
 
   ! Set %Coriolis_Scheme

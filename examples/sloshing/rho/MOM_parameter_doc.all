@@ -21,12 +21,12 @@ NONBLOCKING_UPDATES = False     !   [Boolean] default = False
                                 ! until run time. The STATIC option is substantially
                                 ! faster, but does not allow the PE count to be changed
                                 ! at run time.  This can only be set at compile time.
-NIHALO = 3                      ! default = 2
+NIHALO = 4                      ! default = 2
                                 ! The number of halo points on each side in the
                                 ! x-direction.  With STATIC_MEMORY_ this is set as NIHALO_
                                 ! in MOM_memory.h at compile time; without STATIC_MEMORY_
                                 ! the default is NIHALO_ in MOM_memory.h (if defined) or 2.
-NJHALO = 3                      ! default = 2
+NJHALO = 4                      ! default = 2
                                 ! The number of halo points on each side in the
                                 ! y-direction.  With STATIC_MEMORY_ this is set as NJHALO_
                                 ! in MOM_memory.h at compile time; without STATIC_MEMORY_
@@ -674,6 +674,9 @@ CORIOLIS_EN_DIS = True          !   [Boolean] default = False
                                 ! If true, two estimates of the thickness fluxes are used
                                 ! to estimate the Coriolis term, and the one that
                                 ! dissipates energy relative to the other one is used.
+UPWIND_PV = False               !   [Boolean] default = False
+                                ! If true, the PV in the SADOURNY75_ENERGY scheme is
+                                ! upwind biased, reminiscent of APV (anticipated PV).
 CORIOLIS_SCHEME = "SADOURNY75_ENERGY" ! default = "SADOURNY75_ENERGY"
                                 ! CORIOLIS_SCHEME selects the discretization for the
                                 ! Coriolis terms. Valid values are:
