@@ -129,6 +129,7 @@ type, public :: CoriolisAdv_CS ; private
                              ! SADOURNY75_ENERGY.
   logical :: upwindPV        ! Upwind biases the PV in the SADOURNY75_ENERGY
                              ! scheme, reminiscent of APV.
+  real    :: APV_timescale   ! Anticipated PV time scale, in s.
   type(time_type), pointer :: Time ! A pointer to the ocean model's clock.
   type(diag_ctrl), pointer :: diag ! A structure that is used to regulate the
                              ! timing of diagnostic output.
@@ -286,15 +287,16 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS, timestep)
          "MOM_CoriolisAdv: Module must be initialized before it is used.")
 
   Isq = G%IscB ; Ieq = G%IecB ; Jsq = G%JscB ; Jeq = G%JecB ; nz = G%ke
+  deltaT = 0.
+  if (present(timestep)) deltaT = timestep
   if (CS%upwindPV) then
-   qHalo = 2
+    qHalo = 2
+    if (CS%APV_timescale>0.) deltaT = CS%APV_timescale
   else
-   qHalo = 1
+    qHalo = 1
   endif
   if (Isq-qHalo<G%IsdB) call MOM_error(FATAL, &
          "MOM_CoriolisAdv: halo is not wide enough to compute upwind biased PV.")
-  deltaT = 0.
-  if (present(timestep)) deltaT = timestep
 
   do j=Jsq-qHalo,Jeq+qHalo+1 ; do I=Isq-qHalo,Ieq+qHalo+1
     Area_h(i,j) = G%mask2dT(i,j) * G%areaT(i,j)
@@ -945,6 +947,13 @@ subroutine CoriolisAdv_init(Time, G, param_file, diag, AD, CS)
                  "If true, the PV in the SADOURNY75_ENERGY scheme is\n"//&
                  "upwind biased, reminiscent of APV (anticipated PV).",  &
                  default=.false.)
+  if (CS%upwindPV) then
+    call get_param(param_file, mod, "APV_TIMESCALE", CS%APV_timescale, &
+                 "The anticipated PV time-scale, used if UPWIND_PV is true.\n"//&
+                 "If zero, and UPWIND_PV is true, the scheme resorts to using\n"//&
+                 "the timestep.", &
+                 units="s", default=0.)
+  endif
 
   ! Set %Coriolis_Scheme
   ! (Select the baseline discretization for the Coriolis term)
