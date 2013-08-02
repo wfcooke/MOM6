@@ -95,8 +95,8 @@
 #define NJGLOBAL 2             !  grid points in the zonal and meridional
                                !  directions of the physical domain.
 #define NK 10                  !    The number of layers.
-#define NIHALO 3               !    NIHALO and NJHALO are the number of halo
-#define NJHALO 3               !  points on each side in the x- and y-directions.
+#define NIHALO 4               !    NIHALO and NJHALO are the number of halo
+#define NJHALO 4               !  points on each side in the x- and y-directions.
                                !  If static memory allocation is used, these
                                !  must match the values of X1 and Y1 in MOM_memory.h
 NIPROC_IO = 1                  !    The number of processors used for I/O in the

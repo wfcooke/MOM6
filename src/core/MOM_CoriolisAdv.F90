@@ -162,7 +162,7 @@ character*(20), parameter :: PV_ADV_UPWIND1_STRING = "PV_ADV_UPWIND1"
 
 contains
 
-subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
+subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS, timestep)
   real, intent(in),  dimension(NIMEMB_,NJMEM_,NKMEM_) :: u
   real, intent(in),  dimension(NIMEM_,NJMEMB_,NKMEM_) :: v
   real, intent(in),  dimension(NIMEM_,NJMEM_,NKMEM_)  :: h
@@ -173,6 +173,7 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
   type(accel_diag_ptrs), intent(inout)                :: AD
   type(ocean_grid_type), intent(in)                   :: G
   type(CoriolisAdv_CS), pointer                       :: CS
+  real, intent(in),  optional                         :: timestep
 !    This subroutine calculates the Coriolis and momentum advection
 !  contributions to the acceleration.
 !
@@ -202,6 +203,7 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
 
   real, dimension(SZIB_(G),SZJB_(G)) :: &
     q, &        ! Layer potential vorticity, in m-1 s-1.
+    qBiased, &  ! Upwind biased layer PV, in m-1 s-1.
     Ih_q, &     ! The inverse of thickness interpolated to q pointes, in
                 ! units of m-1 or m2 kg-1.
     Area_q      ! The sum of the ocean areas at the 4 adjacent thickness
@@ -275,17 +277,23 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
   real :: Heff3, Heff4  ! Temporary effective H at U or V points in m or kg m-2.
   real :: UHeff, VHeff  ! More temporary variables, in m3 s-1 or kg s-1.
   real :: QUHeff,QVHeff ! More temporary variables, in m3 s-2 or kg s-2.
-  integer :: i, j, k, is, ie, js, je, Isq, Ieq, Jsq, Jeq, nz
-
-  Isq = G%IscB ; Ieq = G%IecB ; Jsq = G%JscB ; Jeq = G%JecB ; nz = G%ke
+  integer :: i, j, k, is, ie, js, je, Isq, Ieq, Jsq, Jeq, nz, qHalo
+  real :: Cu, Cv, qxy, qx0, q0y, deltaT
 
   if (.not.associated(CS)) call MOM_error(FATAL, &
          "MOM_CoriolisAdv: Module must be initialized before it is used.")
 
-  do j=Jsq-1,Jeq+2 ; do I=Isq-1,Ieq+2
+  Isq = G%IscB ; Ieq = G%IecB ; Jsq = G%JscB ; Jeq = G%JecB ; nz = G%ke
+  qHalo = 2
+  if (Isq-qHalo<G%IsdB) call MOM_error(FATAL, &
+         "MOM_CoriolisAdv: halo is not wide enough to compute upwind biased PV.")
+  deltaT = 0.
+  if (present(timestep)) deltaT = timestep
+
+  do j=Jsq-qHalo,Jeq+qHalo+1 ; do I=Isq-qHalo,Ieq+qHalo+1
     Area_h(i,j) = G%mask2dT(i,j) * G%areaT(i,j)
   enddo ; enddo
-  do J=Jsq-1,Jeq+1 ; do I=Isq-1,Ieq+1
+  do J=Jsq-qHalo,Jeq+qHalo ; do I=Isq-qHalo,Ieq+qHalo
     Area_q(i,j) = (Area_h(i,j) + Area_h(i+1,j+1)) + &
                   (Area_h(i+1,j) + Area_h(i,j+1))
   enddo ; enddo
@@ -300,7 +308,7 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
 ! are calculated.  hq is  second order accurate in space.  Relative
 ! vorticity is second order accurate everywhere with free slip b.c.s,
 ! but only first order accurate at boundaries with no slip b.c.s.
-    do J=Jsq-1,Jeq+1 ; do I=Isq-1,Ieq+1
+    do J=Jsq-qHalo,Jeq+qHalo ; do I=Isq-qHalo,Ieq+qHalo
       if (CS%no_slip ) then
         relative_vorticity = (2.0-G%mask2dBu(I,J)) * &
            ((v(i+1,J,k)*G%dyCv(i+1,J) - v(i,J,k)*G%dyCv(i,J)) - &
@@ -342,6 +350,41 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
       if (CS%id_PV > 0) PV(I,J,k) = q(I,J)
       if (ASSOCIATED(AD%rv_x_v) .or. ASSOCIATED(AD%rv_x_u)) &
         q2(I,J) = relative_vorticity * Ih
+    enddo ; enddo
+    do J=Jsq-1,Jeq+1 ; do I=Isq-1,Ieq+1
+      Cu = deltaT * (uh(I,j+1,k) + uh(I,j,k))
+      qxy = h_neglect * G%areaBu(I,J)
+      if (Cu > 0.) then
+        Cu = Cu / ( ( h(i,j,k)*G%areaT(i,j) + h(i,j+1,k)*G%areaT(i,j+1) ) + qxy )
+      else ! Cu < 0
+        Cu = Cu / ( ( h(i+1,j,k)*G%areaT(i+1,j) + h(i+1,j+1,k)*G%areaT(i+1,j+1) ) + qxy )
+      endif
+      Cv = deltaT * (vh(i+1,J,k) + vh(i,J,k))
+      if (Cv > 0.) then
+        Cv = Cv / ( ( h(i,j,k)*G%areaT(i,j) + h(i+1,j,k)*G%areaT(i+1,j) ) + qxy )
+      else ! Cv < 0
+        Cv = Cv / ( ( h(i,j+1,k)*G%areaT(i,j+1) + h(i+1,j+1,k)*G%areaT(i+1,j+1) ) + qxy )
+      endif
+      if (Cu >= 0.) then
+        if (Cv >= 0.) then
+          qxy = q(I-1,J-1) ; qx0 = q(I-1,J) ; q0y = q(I,J-1)
+        else ! Cv < 0
+          qxy = q(I-1,J+1) ; qx0 = q(I-1,J) ; q0y = q(I,J+1)
+        endif
+      else ! Cu < 0
+        if (Cv >= 0.) then
+          qxy = q(I+1,J-1) ; qx0 = q(I+1,J) ; q0y = q(I,J-1)
+        else ! Cv < 0
+          qxy = q(I+1,J+1) ; qx0 = q(I+1,J) ; q0y = q(I,J+1)
+        endif
+      endif
+      Cu = min( abs(Cu), 0.5 ) ! Bound Cu and turn into CFL>0
+      Cv = min( abs(Cv), 0.5 ) ! Bound Cv and turn into CFL>0
+      ! Note that this expression should be rearranged to give the same
+      ! answers under a 90 degree rotation by pairing the diagonals. --AJA
+      qBiased(I,J) = ( (1.-Cu)*q(I,J) + Cu*qx0 ) * (1.-Cv) &
+                   + ( (1.-Cu)*q0y    + Cu*qxy ) * Cv
+     !qBiased(I,J) = q(I,J)
     enddo ; enddo
 
 !    a, b, c, and d are combinations of neighboring potential
@@ -495,8 +538,8 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
         ! Energy conserving scheme, Sadourny 1975
         do j=js,je ; do I=Isq,Ieq
           CAu(I,j,k) = 0.25 * &
-            (q(I,J) * (vh(i+1,J,k) + vh(i,J,k)) + &
-             q(I,J-1) * (vh(i,J-1,k) + vh(i+1,J-1,k))) * G%IdxCu(i,j)
+            (qBiased(I,J) * (vh(i+1,J,k) + vh(i,J,k)) + &
+             qBiased(I,J-1) * (vh(i,J-1,k) + vh(i+1,J-1,k))) * G%IdxCu(i,j)
         enddo ; enddo
       endif
     elseif (CS%Coriolis_Scheme == SADOURNY75_ENSTRO) then
@@ -604,8 +647,8 @@ subroutine CorAdCalc(u, v, h, uh, vh, CAu, CAv, AD, G, CS)
         ! Energy conserving scheme, Sadourny 1975
         do J=Jsq,Jeq ; do i=is,ie
           CAv(i,J,k) = - 0.25* &
-              (q(I-1,J)*(uh(I-1,j,k) + uh(I-1,j+1,k)) + &
-               q(I,J)*(uh(I,j,k) + uh(I,j+1,k))) * G%IdyCv(i,J)
+              (qBiased(I-1,J)*(uh(I-1,j,k) + uh(I-1,j+1,k)) + &
+               qBiased(I,J)*(uh(I,j,k) + uh(I,j+1,k))) * G%IdyCv(i,J)
         enddo ; enddo
       endif
     elseif (CS%Coriolis_Scheme == SADOURNY75_ENSTRO) then

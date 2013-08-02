@@ -467,8 +467,9 @@ subroutine step_MOM_dyn_split_RK2(u, v, h, tv, visc, &
 
 ! CAu = -(f+zeta_av)/h_av vh + d/dx KE_av
   call cpu_clock_begin(id_clock_Cor)
+  call pass_var(h_av, G%Domain)
   call CorAdCalc(u_av, v_av, h_av, uh, vh, CS%CAu, CS%CAv, CS%ADp, G, &
-                 CS%CoriolisAdv_CSp)
+                 CS%CoriolisAdv_CSp, timestep=dt)
   call cpu_clock_end(id_clock_Cor)
 
 ! u_bc_accel = CAu + PFu + diffu(u[n-1])
@@ -730,8 +731,9 @@ subroutine step_MOM_dyn_split_RK2(u, v, h, tv, visc, &
 
 ! CAu = -(f+zeta_av)/h_av vh + d/dx KE_av
   call cpu_clock_begin(id_clock_Cor)
+  call pass_var(h_av, G%Domain)
   call CorAdCalc(u_av, v_av, h_av, uh, vh, CS%CAu, CS%CAv, CS%ADp, G, &
-                 CS%CoriolisAdv_CSp)
+                 CS%CoriolisAdv_CSp, timestep=dt)
   call cpu_clock_end(id_clock_Cor)
 
 ! Calculate the momentum forcing terms for the barotropic equations.
