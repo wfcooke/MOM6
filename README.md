@@ -9,6 +9,7 @@ Updating the generated API documentation
 ========================================
 
 The workflow for re-generating the API documentation with doxygen (http://www.doxygen.org/) is:
+
     git checkout dev/master
     (cd tools; git clone https://github.com/doxygen/doxygen)
     ./tools/doxygen/bin/doxygen .doxygen
