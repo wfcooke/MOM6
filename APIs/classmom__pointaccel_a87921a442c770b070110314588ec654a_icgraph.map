@@ -1,0 +1,10 @@
+<map id="mom_pointaccel::pointaccel_init" name="mom_pointaccel::pointaccel_init">
+<area shape="rect" id="node2" href="$classmom__vert__friction.html#a541871ac44b68df64f5eef9cca9df664" title="mom_vert_friction::\lvertvisc_init" alt="" coords="265,135,399,179"/>
+<area shape="rect" id="node3" href="$classmom__dynamics__legacy__split.html#ab35a915e5427d642387eacfa8df712b1" title="mom_dynamics_legacy\l_split::initialize_dyn\l_legacy_split" alt="" coords="448,5,608,65"/>
+<area shape="rect" id="node7" href="$classmom__dynamics__split__rk2.html#a95c148c06639c3135493aa82a22d9f72" title="mom_dynamics_split\l_rk2::initialize_dyn\l_split_rk2" alt="" coords="455,89,601,149"/>
+<area shape="rect" id="node8" href="$classmom__dynamics__unsplit.html#adb8ebe864e36fa6592fb873d0f46dd64" title="mom_dynamics_unsplit\l::initialize_dyn_unsplit" alt="" coords="448,173,608,217"/>
+<area shape="rect" id="node9" href="$classmom__dynamics__unsplit__rk2.html#aa8826ec6da08a0a828881e9b48e8fd16" title="mom_dynamics_unsplit\l_rk2::initialize_dyn\l_unsplit_rk2" alt="" coords="448,241,608,301"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="657,143,799,171"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="894,113,981,141"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="848,165,1027,209"/>
+</map>

@@ -1,0 +1,12 @@
+<map id="mom_tracer_registry::add_tracer_obc_values" name="mom_tracer_registry::add_tracer_obc_values">
+<area shape="rect" id="node2" href="$classdome__initialization.html#a1c90327b765dde5933f23f04a28be8f7" title="dome_initialization\l::dome_set_open_bdry_conds" alt="" coords="221,5,422,49"/>
+<area shape="rect" id="node7" href="$classdome__tracer.html#aa19bfc065ea691f3f0fc4f352f209955" title="dome_tracer::initialize\l_dome_tracer" alt="" coords="246,209,397,253"/>
+<area shape="rect" id="node9" href="$classmom__initialization.html#a1d561bcb3c383bbed0361f22e7dec1e3" title="mom_initialization\l::set_flather_bdry_conds" alt="" coords="238,73,405,117"/>
+<area shape="rect" id="node10" href="$classmom__initialization.html#afccb94343516cfcc00706dc3a40ded7b" title="mom_initialization\l::set_open_bdry_conds" alt="" coords="241,141,401,185"/>
+<area shape="rect" id="node11" href="$classuser__tracer__example.html#adede17df0a4ee873194d05c4ccc32ebb" title="user_tracer_example\l::user_initialize_tracer" alt="" coords="246,277,397,321"/>
+<area shape="rect" id="node3" href="$classmom__initialization.html#ad747f1526fcb5e7903225dce5136ccfe" title="mom_initialization\l::mom_initialize" alt="" coords="491,107,618,151"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="689,166,831,194"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="926,135,1013,163"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="880,187,1059,231"/>
+<area shape="rect" id="node8" href="$classmom__tracer__flow__control.html#a26dae9316cf5ca4da3bab697ef25df8f" title="mom_tracer_flow_control\l::tracer_flow_control_init" alt="" coords="469,209,640,253"/>
+</map>

@@ -1,0 +1,10 @@
+<map id="user_initialization::user_set_coord" name="user_initialization::user_set_coord">
+<area shape="rect" id="node2" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="1302,65,1448,109"/>
+<area shape="rect" id="node4" href="$classuser__initialization.html#aebfc0db710e83bae83f08e1a774256dd" title="user_initialization\l::write_user_log" alt="" coords="180,98,303,142"/>
+<area shape="rect" id="node3" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="1496,179,1642,223"/>
+<area shape="rect" id="node5" href="$classmom__file__parser.html#a17c0ef1bb1912f02faa0aaa1e0f64210" title="mom_file_parser::log\l_version" alt="" coords="352,153,498,197"/>
+<area shape="rect" id="node6" href="$classmom__document.html#a29ab772c411aedcc137942020c1ee042" title="mom_document::doc_module" alt="" coords="547,161,744,189"/>
+<area shape="rect" id="node7" href="$classmom__document.html#aab976b6c6c9c01833438d217fca228a4" title="mom_document::open\l_doc_file" alt="" coords="844,93,998,137"/>
+<area shape="rect" id="node9" href="$classmom__document.html#ad07b3bca0410218e0d969cef7509bf34" title="mom_document::writemessageanddesc" alt="" coords="793,161,1050,189"/>
+<area shape="rect" id="node8" href="$classmom__document.html#a5f2661445a72a7d0f774677e91366db5" title="mom_document::find\l_unused_unit_number" alt="" coords="1099,94,1253,138"/>
+</map>

@@ -1,0 +1,16 @@
+<map id="user_initialization::write_user_log" name="user_initialization::write_user_log">
+<area shape="rect" id="node2" href="$classuser__initialization.html#a251a51cb192b14598b806e548b1561a3" title="user_initialization\l::user_init_mixed_layer\l_density" alt="" coords="197,5,355,65"/>
+<area shape="rect" id="node3" href="$classuser__initialization.html#aa4fad7191fd4cc01281b8edd6d9d571a" title="user_initialization\l::user_init_temperature\l_salinity" alt="" coords="435,30,594,90"/>
+<area shape="rect" id="node8" href="$classuser__initialization.html#a7b14806f2c4db32faadeaebc6363aa64" title="user_initialization\l::user_initialize_sponges" alt="" coords="431,114,598,158"/>
+<area shape="rect" id="node9" href="$classuser__initialization.html#a38414708a52995428a9442eecf6a8258" title="user_initialization\l::user_initialize_thickness" alt="" coords="428,182,601,226"/>
+<area shape="rect" id="node10" href="$classuser__initialization.html#a39483698187dc74f75d280256eae29d3" title="user_initialization\l::user_initialize_topography" alt="" coords="184,242,368,286"/>
+<area shape="rect" id="node12" href="$classuser__initialization.html#af122fe6e02b74450203d73708a1b67b8" title="user_initialization\l::user_initialize_velocity" alt="" coords="434,318,595,362"/>
+<area shape="rect" id="node13" href="$classuser__initialization.html#aadae8aa7e5964143fe345ffae575630c" title="user_initialization\l::user_set_coord" alt="" coords="214,362,338,406"/>
+<area shape="rect" id="node14" href="$classuser__initialization.html#ad5ce4f0532bb2015a7e53dace87e0cc3" title="user_initialization\l::user_set_open_bdry_conds" alt="" coords="179,430,373,474"/>
+<area shape="rect" id="node15" href="$classuser__initialization.html#a83f001dcb5625d866c1265120a248e3c" title="user_initialization\l::user_set_rotation" alt="" coords="210,498,342,542"/>
+<area shape="rect" id="node4" href="$classmom__initialization.html#ad747f1526fcb5e7903225dce5136ccfe" title="mom_initialization\l::mom_initialize" alt="" coords="656,250,784,294"/>
+<area shape="rect" id="node5" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="833,258,975,286"/>
+<area shape="rect" id="node6" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="1070,227,1157,255"/>
+<area shape="rect" id="node7" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="1024,279,1203,323"/>
+<area shape="rect" id="node11" href="$classmom__initialization.html#a7d044791ff64a808b9b897e94932ca22" title="mom_initialization\l::mom_initialize_topography" alt="" coords="421,250,608,294"/>
+</map>

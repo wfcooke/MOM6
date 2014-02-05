@@ -1,0 +1,17 @@
+<map id="mom_coms::regularize_ints" name="mom_coms::regularize_ints">
+<area shape="rect" id="node2" href="$classmom__coms.html#a4aaf51b372bcaf7b46939145577eff92" title="mom_coms::efp_to_real" alt="" coords="239,128,403,156"/>
+<area shape="rect" id="node15" href="$classmom__coms.html#a99e145acc9227dad1bddc6cf211e4daf" title="mom_coms::reproducing\l_sum_2d" alt="" coords="237,180,405,224"/>
+<area shape="rect" id="node16" href="$classmom__coms.html#aa21533e0badf43b331b5f7a9730c005f" title="mom_coms::reproducing\l_sum_3d" alt="" coords="237,248,405,292"/>
+<area shape="rect" id="node3" href="$classmom__coms.html#a6cbcab29d87b134dcd5c4bdb922b4344" title="mom_coms::efp_list\l_sum_across_pes" alt="" coords="469,34,609,78"/>
+<area shape="rect" id="node4" href="$classmom__spatial__means.html#a1268ed073db7e190a1d06fa72bd7a8de" title="mom_spatial_means::\lglobal_i_mean" alt="" coords="672,17,824,61"/>
+<area shape="rect" id="node10" href="$classmom__spatial__means.html#a0862005dff883cfbd1b9ffc1ef15cdbf" title="mom_spatial_means::\lglobal_j_mean" alt="" coords="672,85,824,129"/>
+<area shape="rect" id="node11" href="$classmom__coms.html#a8f23ba3eaaf03101afa61c339fac805b" title="mom_coms::efp_real_diff" alt="" coords="453,205,624,233"/>
+<area shape="rect" id="node12" href="$MOM__sum__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="495,257,582,285"/>
+<area shape="rect" id="node13" href="$classmom__sum__output.html#a593ccaf1da180e5696c3dcc8da2d4d1f" title="mom_sum_output::write\l_energy" alt="" coords="1308,129,1471,173"/>
+<area shape="rect" id="node5" href="$classmom__sponge.html#addc13fa8f7268e68494b962770805019" title="mom_sponge::apply_sponge" alt="" coords="872,41,1064,69"/>
+<area shape="rect" id="node6" href="$classmom__diabatic__driver.html#a83f61407877a5da8907752f9bd1f034f" title="mom_diabatic_driver\l::diabatic" alt="" coords="1113,37,1258,81"/>
+<area shape="rect" id="node7" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="1329,46,1450,74"/>
+<area shape="rect" id="node8" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="1568,106,1656,134"/>
+<area shape="rect" id="node9" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="1521,38,1703,82"/>
+<area shape="rect" id="node14" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="1523,158,1701,202"/>
+</map>

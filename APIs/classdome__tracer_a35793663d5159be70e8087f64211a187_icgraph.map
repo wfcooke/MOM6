@@ -1,0 +1,17 @@
+<map id="dome_tracer::dome_tracer_column_physics" name="dome_tracer::dome_tracer_column_physics">
+<area shape="rect" id="node2" href="$classmom__tracer__flow__control.html#a577dc9727f94992211dda7c96a558888" title="mom_tracer_flow_control\l::call_tracer_column_fns" alt="" coords="232,247,403,291"/>
+<area shape="rect" id="node3" href="$classmom__diabatic__driver.html#a83f61407877a5da8907752f9bd1f034f" title="mom_diabatic_driver\l::diabatic" alt="" coords="451,183,597,227"/>
+<area shape="rect" id="node7" href="$classmom__diabatic__driver.html#ac28ac05e0fa2fb9e5f9286502a1ead37" title="mom_diabatic_driver\l::adiabatic" alt="" coords="451,311,597,355"/>
+<area shape="rect" id="node4" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="678,157,799,185"/>
+<area shape="rect" id="node5" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="881,5,1063,49"/>
+<area shape="rect" id="node6" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="1350,153,1437,181"/>
+<area shape="rect" id="node8" href="$classmom__dynamics__legacy__split.html#a798d93cf3f2209f32aff21b25b71607c" title="mom_dynamics_legacy\l_split::register_restarts\l_dyn_legacy_split" alt="" coords="658,399,819,459"/>
+<area shape="rect" id="node11" href="$classmom__dynamics__legacy__split.html#ab35a915e5427d642387eacfa8df712b1" title="mom_dynamics_legacy\l_split::initialize_dyn\l_legacy_split" alt="" coords="892,361,1052,421"/>
+<area shape="rect" id="node12" href="$classmom__set__visc.html#a4ed35d964af077f1cf6dbd8799f6f972" title="mom_set_visc::set_visc\l_register_restarts" alt="" coords="658,486,820,530"/>
+<area shape="rect" id="node13" href="$classmom__set__visc.html#a4b5f6eed2e8c69af267d4783129175bd" title="mom_set_visc::set_visc_init" alt="" coords="645,293,832,321"/>
+<area shape="rect" id="node9" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="1113,293,1255,321"/>
+<area shape="rect" id="node10" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="1304,285,1483,329"/>
+<area shape="rect" id="node14" href="$classmom__dynamics__split__rk2.html#a95c148c06639c3135493aa82a22d9f72" title="mom_dynamics_split\l_rk2::initialize_dyn\l_split_rk2" alt="" coords="899,277,1045,337"/>
+<area shape="rect" id="node15" href="$classmom__dynamics__unsplit.html#adb8ebe864e36fa6592fb873d0f46dd64" title="mom_dynamics_unsplit\l::initialize_dyn_unsplit" alt="" coords="892,125,1052,169"/>
+<area shape="rect" id="node16" href="$classmom__dynamics__unsplit__rk2.html#aa8826ec6da08a0a828881e9b48e8fd16" title="mom_dynamics_unsplit\l_rk2::initialize_dyn\l_unsplit_rk2" alt="" coords="892,193,1052,253"/>
+</map>

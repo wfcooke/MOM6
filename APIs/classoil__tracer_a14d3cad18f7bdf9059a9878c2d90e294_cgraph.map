@@ -1,0 +1,11 @@
+<map id="oil_tracer::initialize_oil_tracer" name="oil_tracer::initialize_oil_tracer">
+<area shape="rect" id="node2" href="$classmom__tracer__registry.html#ad8f22ff588c9b56ee82a2abd449c9a3a" title="mom_tracer_registry\l::add_tracer_diagnostics" alt="" coords="185,5,351,49"/>
+<area shape="rect" id="node3" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="603,90,749,134"/>
+<area shape="rect" id="node5" href="$classmom__diag__mediator.html#a5e8cc98ee3d2ff639e862d78e56b7f5f" title="mom_diag_mediator::\lregister_diag_field" alt="" coords="401,175,551,219"/>
+<area shape="rect" id="node7" href="$classmom__diag__to__z.html#aa4d97e8d218b8dfb09f2a773d038b6da" title="mom_diag_to_z::register\l_z_tracer" alt="" coords="184,125,352,169"/>
+<area shape="rect" id="node8" href="$classmidas__vertmap.html#a6fc99abf8494224d21a6e15fb962ee16" title="midas_vertmap::tracer\l_z_init" alt="" coords="191,245,345,289"/>
+<area shape="rect" id="node4" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="800,121,946,165"/>
+<area shape="rect" id="node6" href="$classmom__diag__mediator.html#a2e5d9674bea456c0bf84dd4923d3bb74" title="mom_diag_mediator::\ldescribe_option" alt="" coords="601,210,751,254"/>
+<area shape="rect" id="node9" href="$classmom__diag__to__z.html#a55f6203cfb483bb62c543f689ab30741" title="mom_diag_to_z::find\l_limited_slope" alt="" coords="403,243,549,287"/>
+<area shape="rect" id="node10" href="$classmom__diag__to__z.html#a7bb6af99ccb5eb1daf7473663ca19aea" title="mom_diag_to_z::find\l_overlap" alt="" coords="403,311,549,355"/>
+</map>

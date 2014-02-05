@@ -1,0 +1,7 @@
+<map id="mom_spatial_means::global_i_mean" name="mom_spatial_means::global_i_mean">
+<area shape="rect" id="node2" href="$classmom__sponge.html#addc13fa8f7268e68494b962770805019" title="mom_sponge::apply_sponge" alt="" coords="205,35,398,63"/>
+<area shape="rect" id="node3" href="$classmom__diabatic__driver.html#a83f61407877a5da8907752f9bd1f034f" title="mom_diabatic_driver\l::diabatic" alt="" coords="446,27,591,71"/>
+<area shape="rect" id="node4" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="640,35,760,63"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="856,5,944,33"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="809,57,991,101"/>
+</map>

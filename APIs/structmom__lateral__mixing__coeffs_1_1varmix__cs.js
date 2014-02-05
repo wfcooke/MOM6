@@ -1,0 +1,26 @@
+var structmom__lateral__mixing__coeffs_1_1varmix__cs =
+[
+    [ "cg1", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a42c8b2a241dcf8a87b0f244ce9c9d3ff", null ],
+    [ "diag", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a7397c5eea35ca7f687c28bf28bc72db1", null ],
+    [ "id_l2u", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a45f886520728476f2a12c914b51b74dd", null ],
+    [ "id_l2v", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a35a2cb4599b587e4cac4ee169fdcbac2", null ],
+    [ "id_rd_dx", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#ae75085d38e025ccf12e0cb3b3ed4b172", null ],
+    [ "id_res_fn", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a7364e037bc59942d2c9c064e4826c78b", null ],
+    [ "id_sn_u", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a3e98df039bbb89c504bca73aa225cd58", null ],
+    [ "id_sn_v", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#af9b19c89877289d60528a5a86673ec6e", null ],
+    [ "l2u", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#aa87ac0967c5a889d2f7988d7448270cc", null ],
+    [ "l2v", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a59dbb98ab5b126789e4d8e033eb0fd54", null ],
+    [ "res_coef", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a6c66968b23adac968badf32341bd25fd", null ],
+    [ "res_fn_h", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a93460805d27d13640e1ab8ddcc361162", null ],
+    [ "res_fn_power", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#aee281293ccc3154accf107f2158ae91d", null ],
+    [ "res_fn_q", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a7f61c3afb0c6df181b577d25e3ec3aa3", null ],
+    [ "resoln_scaled_kh", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a2a49077f27fff2d6403787874d5bfbb3", null ],
+    [ "resoln_scaled_khth", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a7fc9bc1623ca406f84b0cb2db9a4278b", null ],
+    [ "resoln_scaled_khtr", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a667daefcaf30d5b4bc1be70013959891", null ],
+    [ "sn_u", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a3b9164561d6063e0ae0939216e0bcd95", null ],
+    [ "sn_v", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a5c43a1d00b4a448e1f3d6591204d4bb2", null ],
+    [ "use_variable_mixing", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a284617559ea9f1ca18d469a54b89211f", null ],
+    [ "varmix_ktop", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#acc23da8f8c4820374dfba32ef8df2581", null ],
+    [ "visbeck_l_scale", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#a38e5fba32ec0a65c560ef7308407e2ff", null ],
+    [ "wave_speed_csp", "structmom__lateral__mixing__coeffs_1_1varmix__cs.html#ae16a469020d91605d7e3b2f4c1a4044b", null ]
+];

@@ -1,0 +1,10 @@
+<map id="mom_legacy_barotropic::legacy_btcalc" name="mom_legacy_barotropic::legacy_btcalc">
+<area shape="rect" id="node2" href="$classmom__legacy__barotropic.html#ab449a823e09b8840da2280cc591e8c18" title="mom_legacy_barotropic\l::legacy_barotropic_init" alt="" coords="220,14,383,58"/>
+<area shape="rect" id="node7" href="$classmom__dynamics__legacy__split.html#a65e000d7f670ad4b21617f0061014428" title="mom_dynamics_legacy\l_split::step_mom_dyn\l_legacy_split" alt="" coords="221,82,382,142"/>
+<area shape="rect" id="node3" href="$classmom__dynamics__legacy__split.html#ab35a915e5427d642387eacfa8df712b1" title="mom_dynamics_legacy\l_split::initialize_dyn\l_legacy_split" alt="" coords="432,6,592,66"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="661,22,803,50"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="918,78,1005,106"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="872,10,1051,54"/>
+<area shape="rect" id="node8" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="452,98,572,126"/>
+<area shape="rect" id="node9" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="641,130,823,174"/>
+</map>

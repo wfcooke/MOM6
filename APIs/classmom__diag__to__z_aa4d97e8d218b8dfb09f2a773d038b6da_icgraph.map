@@ -1,0 +1,12 @@
+<map id="mom_diag_to_z::register_z_tracer" name="mom_diag_to_z::register_z_tracer">
+<area shape="rect" id="node2" href="$classadvection__test__tracer.html#a69579ed825b263df25db19986746785b" title="advection_test_tracer\l::initialize_advection\l_test_tracer" alt="" coords="238,51,386,111"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="670,109,813,137"/>
+<area shape="rect" id="node7" href="$classdome__tracer.html#aa19bfc065ea691f3f0fc4f352f209955" title="dome_tracer::initialize\l_dome_tracer" alt="" coords="237,135,387,179"/>
+<area shape="rect" id="node8" href="$classideal__age__example.html#ae4b07ae8034e4a144ea485d1fe3e6d54" title="ideal_age_example::\linitialize_ideal_age\l_tracer" alt="" coords="240,203,384,263"/>
+<area shape="rect" id="node9" href="$classmom__ocmip2__cfc.html#a3a2d342a091bcbfe904eac1f5f805f6a" title="mom_ocmip2_cfc::initialize\l_ocmip2_cfc" alt="" coords="222,287,402,331"/>
+<area shape="rect" id="node10" href="$classoil__tracer.html#a14d3cad18f7bdf9059a9878c2d90e294" title="oil_tracer::initialize\l_oil_tracer" alt="" coords="247,355,377,399"/>
+<area shape="rect" id="node11" href="$classuser__tracer__example.html#adede17df0a4ee873194d05c4ccc32ebb" title="user_tracer_example\l::user_initialize_tracer" alt="" coords="237,423,387,467"/>
+<area shape="rect" id="node3" href="$classmom__tracer__flow__control.html#a26dae9316cf5ca4da3bab697ef25df8f" title="mom_tracer_flow_control\l::tracer_flow_control_init" alt="" coords="451,211,621,255"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="907,79,994,107"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="861,131,1040,175"/>
+</map>

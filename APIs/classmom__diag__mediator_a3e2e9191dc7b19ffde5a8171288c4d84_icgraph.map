@@ -1,0 +1,8 @@
+<map id="mom_diag_mediator::register_static_field" name="mom_diag_mediator::register_static_field">
+<area shape="rect" id="node2" href="$classmom__geothermal.html#a0abbb7953860e3357bbd3d35f46fd851" title="mom_geothermal::geothermal_init" alt="" coords="206,15,429,43"/>
+<area shape="rect" id="node7" href="$classmom.html#a36275a94577312ab6200b1f5ff158805" title="mom::write_static_fields" alt="" coords="478,73,642,101"/>
+<area shape="rect" id="node3" href="$classmom__diabatic__driver.html#a68e68493f862296c6177275f2187c6b3" title="mom_diabatic_driver\l::diabatic_driver_init" alt="" coords="487,5,633,49"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="691,43,834,71"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="928,13,1016,41"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="883,65,1061,109"/>
+</map>

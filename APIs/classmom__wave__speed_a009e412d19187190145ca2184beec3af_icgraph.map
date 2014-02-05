@@ -1,0 +1,7 @@
+<map id="mom_wave_speed::wave_speed_init" name="mom_wave_speed::wave_speed_init">
+<area shape="rect" id="node2" href="$classmom__diagnostics.html#a7f762ce74cd0612b59c6cc4fe3767571" title="mom_diagnostics::mom\l_diagnostics_init" alt="" coords="227,5,389,49"/>
+<area shape="rect" id="node6" href="$classmom__lateral__mixing__coeffs.html#aeb658054e8d4d723dff397f8ae186e4a" title="mom_lateral_mixing\l_coeffs::varmix_init" alt="" coords="238,73,378,117"/>
+<area shape="rect" id="node3" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="438,47,581,75"/>
+<area shape="rect" id="node4" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="675,17,762,45"/>
+<area shape="rect" id="node5" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="629,69,808,113"/>
+</map>

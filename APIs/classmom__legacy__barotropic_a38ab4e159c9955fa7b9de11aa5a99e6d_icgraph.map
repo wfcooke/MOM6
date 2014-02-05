@@ -1,0 +1,6 @@
+<map id="mom_legacy_barotropic::register_legacy_barotropic_restarts" name="mom_legacy_barotropic::register_legacy_barotropic_restarts">
+<area shape="rect" id="node2" href="$classmom__dynamics__legacy__split.html#a798d93cf3f2209f32aff21b25b71607c" title="mom_dynamics_legacy\l_split::register_restarts\l_dyn_legacy_split" alt="" coords="240,19,400,79"/>
+<area shape="rect" id="node3" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="449,35,591,63"/>
+<area shape="rect" id="node4" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="686,5,773,33"/>
+<area shape="rect" id="node5" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="640,57,819,101"/>
+</map>

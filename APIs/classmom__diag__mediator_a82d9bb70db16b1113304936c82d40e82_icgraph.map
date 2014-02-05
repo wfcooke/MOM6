@@ -1,0 +1,10 @@
+<map id="mom_diag_mediator::i2s" name="mom_diag_mediator::i2s">
+<area shape="rect" id="node2" href="$classmom__diag__mediator.html#a8a745f458497926332d42c8212def81e" title="mom_diag_mediator::\ldefineaxes" alt="" coords="222,73,372,117"/>
+<area shape="rect" id="node3" href="$classmom__internal__tides.html#aeedbc8dd864240e0dc4486aebab6e21f" title="mom_internal_tides\l::internal_tides_init" alt="" coords="429,9,566,53"/>
+<area shape="rect" id="node8" href="$classmom__diag__to__z.html#a32bcfe5fc6b4944a330e9ae7d7619cd9" title="mom_diag_to_z::mom\l_diag_to_z_init" alt="" coords="622,73,775,117"/>
+<area shape="rect" id="node9" href="$classmom__diag__mediator.html#a0d2aee61edca87e28e3a8c04afca25b1" title="mom_diag_mediator::\lset_axes_info" alt="" coords="422,133,572,177"/>
+<area shape="rect" id="node4" href="$classmom__diabatic__driver.html#a68e68493f862296c6177275f2187c6b3" title="mom_diabatic_driver\l::diabatic_driver_init" alt="" coords="626,5,771,49"/>
+<area shape="rect" id="node5" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="825,81,967,109"/>
+<area shape="rect" id="node6" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="1062,50,1149,78"/>
+<area shape="rect" id="node7" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="1016,102,1195,146"/>
+</map>

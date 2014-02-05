@@ -1,0 +1,22 @@
+<map id="mom_set_visc::set_visc_init" name="mom_set_visc::set_visc_init">
+<area shape="rect" id="node2" href="$classmom__diabatic__driver.html#ac28ac05e0fa2fb9e5f9286502a1ead37" title="mom_diabatic_driver\l::adiabatic" alt="" coords="257,518,402,562"/>
+<area shape="rect" id="node4" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="1224,255,1370,299"/>
+<area shape="rect" id="node14" href="$classmom__kappa__shear.html#ac7859c609e462000ca8fd763d68d141e" title="mom_kappa_shear::kappa\l_shear_is_used" alt="" coords="240,858,419,902"/>
+<area shape="rect" id="node15" href="$classmom__file__parser.html#a17c0ef1bb1912f02faa0aaa1e0f64210" title="mom_file_parser::log\l_version" alt="" coords="256,86,402,130"/>
+<area shape="rect" id="node20" href="$classmom__diag__mediator.html#a5e8cc98ee3d2ff639e862d78e56b7f5f" title="mom_diag_mediator::\lregister_diag_field" alt="" coords="1021,510,1171,554"/>
+<area shape="rect" id="node3" href="$classmom__tracer__flow__control.html#a577dc9727f94992211dda7c96a558888" title="mom_tracer_flow_control\l::call_tracer_column_fns" alt="" coords="480,518,651,562"/>
+<area shape="rect" id="node6" href="$classuser__tracer__example.html#a4f52ec2984197b099feae0a427fc6126" title="user_tracer_example\l::tracer_column_physics" alt="" coords="759,654,924,698"/>
+<area shape="rect" id="node7" href="$classdome__tracer.html#a35793663d5159be70e8087f64211a187" title="dome_tracer::dome_tracer\l_column_physics" alt="" coords="752,586,931,630"/>
+<area shape="rect" id="node9" href="$classideal__age__example.html#a8f603b2c8d74a890bde0284d2b19445e" title="ideal_age_example::\lideal_age_tracer_column\l_physics" alt="" coords="756,434,927,494"/>
+<area shape="rect" id="node10" href="$classoil__tracer.html#ae737addc15a879cc5feb8dcc5be9a708" title="oil_tracer::oil_tracer\l_column_physics" alt="" coords="772,518,911,562"/>
+<area shape="rect" id="node11" href="$classadvection__test__tracer.html#a4aee4e5dbbdc464009f707d8629630f8" title="advection_test_tracer\l::advection_test_tracer\l_column_physics" alt="" coords="763,722,919,782"/>
+<area shape="rect" id="node12" href="$classmom__ocmip2__cfc.html#ae4dc30d87c89d2bb2b71b2487658d115" title="mom_ocmip2_cfc::ocmip2\l_cfc_column_physics" alt="" coords="753,366,929,410"/>
+<area shape="rect" id="node5" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="1422,85,1568,129"/>
+<area shape="rect" id="node8" href="$classmom__tracer__registry.html#ac786042dfc5888c66d5f9a7f7365f246" title="mom_tracer_registry\l::tracer_vertdiff" alt="" coords="1024,442,1168,486"/>
+<area shape="rect" id="node13" href="$classcoupler__util.html#afe127d0bd185db38c9861db9eda495c9" title="coupler_util::extract\l_coupler_values" alt="" coords="1028,366,1164,410"/>
+<area shape="rect" id="node16" href="$classmom__document.html#a29ab772c411aedcc137942020c1ee042" title="mom_document::doc_module" alt="" coords="467,94,664,122"/>
+<area shape="rect" id="node17" href="$classmom__document.html#aab976b6c6c9c01833438d217fca228a4" title="mom_document::open\l_doc_file" alt="" coords="764,146,918,190"/>
+<area shape="rect" id="node19" href="$classmom__document.html#ad07b3bca0410218e0d969cef7509bf34" title="mom_document::writemessageanddesc" alt="" coords="713,94,970,122"/>
+<area shape="rect" id="node18" href="$classmom__document.html#a5f2661445a72a7d0f774677e91366db5" title="mom_document::find\l_unused_unit_number" alt="" coords="1019,195,1173,239"/>
+<area shape="rect" id="node21" href="$classmom__diag__mediator.html#a2e5d9674bea456c0bf84dd4923d3bb74" title="mom_diag_mediator::\ldescribe_option" alt="" coords="1222,510,1372,554"/>
+</map>

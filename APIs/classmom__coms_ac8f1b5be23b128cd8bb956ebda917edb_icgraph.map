@@ -1,0 +1,12 @@
+<map id="mom_coms::real_to_efp" name="mom_coms::real_to_efp">
+<area shape="rect" id="node2" href="$classmom__spatial__means.html#a1268ed073db7e190a1d06fa72bd7a8de" title="mom_spatial_means::\lglobal_i_mean" alt="" coords="219,5,371,49"/>
+<area shape="rect" id="node8" href="$classmom__spatial__means.html#a0862005dff883cfbd1b9ffc1ef15cdbf" title="mom_spatial_means::\lglobal_j_mean" alt="" coords="219,125,371,169"/>
+<area shape="rect" id="node9" href="$MOM__sum__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="251,193,338,221"/>
+<area shape="rect" id="node10" href="$classmom__sum__output.html#a593ccaf1da180e5696c3dcc8da2d4d1f" title="mom_sum_output::write\l_energy" alt="" coords="854,65,1018,109"/>
+<area shape="rect" id="node3" href="$classmom__sponge.html#addc13fa8f7268e68494b962770805019" title="mom_sponge::apply_sponge" alt="" coords="418,13,611,41"/>
+<area shape="rect" id="node4" href="$classmom__diabatic__driver.html#a83f61407877a5da8907752f9bd1f034f" title="mom_diabatic_driver\l::diabatic" alt="" coords="659,5,805,49"/>
+<area shape="rect" id="node5" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="876,13,996,41"/>
+<area shape="rect" id="node6" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="1115,73,1202,101"/>
+<area shape="rect" id="node7" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="1067,5,1250,49"/>
+<area shape="rect" id="node11" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="1069,125,1248,169"/>
+</map>

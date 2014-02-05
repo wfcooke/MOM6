@@ -1,0 +1,11 @@
+<map id="mom_sponge::set_up_sponge_field" name="mom_sponge::set_up_sponge_field">
+<area shape="rect" id="node2" href="$classdome__initialization.html#ab25c28cc7d79cd04007d13a8c007e6ac" title="dome_initialization\l::dome_initialize_sponges" alt="" coords="203,5,378,49"/>
+<area shape="rect" id="node7" href="$classdome__tracer.html#aa19bfc065ea691f3f0fc4f352f209955" title="dome_tracer::initialize\l_dome_tracer" alt="" coords="215,141,366,185"/>
+<area shape="rect" id="node9" href="$classmom__initialization.html#ae9fcba4d5d2ce9ddea43587b8bb5cbf4" title="mom_initialization\l::initialize_sponges_file" alt="" coords="211,73,370,117"/>
+<area shape="rect" id="node10" href="$classuser__tracer__example.html#adede17df0a4ee873194d05c4ccc32ebb" title="user_tracer_example\l::user_initialize_tracer" alt="" coords="215,209,366,253"/>
+<area shape="rect" id="node3" href="$classmom__initialization.html#ad747f1526fcb5e7903225dce5136ccfe" title="mom_initialization\l::mom_initialize" alt="" coords="448,73,576,117"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="646,115,789,143"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="883,85,970,113"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="837,137,1016,181"/>
+<area shape="rect" id="node8" href="$classmom__tracer__flow__control.html#a26dae9316cf5ca4da3bab697ef25df8f" title="mom_tracer_flow_control\l::tracer_flow_control_init" alt="" coords="427,141,597,185"/>
+</map>

@@ -1,0 +1,6 @@
+<map id="mom_legacy_barotropic::set_up_bt_obc" name="mom_legacy_barotropic::set_up_bt_obc">
+<area shape="rect" id="node2" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="222,5,368,49"/>
+<area shape="rect" id="node4" href="$classmom__barotropic.html#a0311f0f3d4e27f4017582d6a8c01298c" title="mom_barotropic::uhbt\l_to_ubt" alt="" coords="219,73,370,117"/>
+<area shape="rect" id="node5" href="$classmom__barotropic.html#aeed3e618781611b448105a122e1a358c" title="mom_barotropic::vhbt\l_to_vbt" alt="" coords="220,141,370,185"/>
+<area shape="rect" id="node3" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="419,5,565,49"/>
+</map>

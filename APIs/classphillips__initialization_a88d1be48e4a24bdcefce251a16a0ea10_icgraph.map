@@ -1,0 +1,7 @@
+<map id="phillips_initialization::sech" name="phillips_initialization::sech">
+<area shape="rect" id="node2" href="$classphillips__initialization.html#a58cd2c481b9b7149a0dd8db291981172" title="phillips_initialization\l::phillips_initialize\l_velocity" alt="" coords="192,19,331,79"/>
+<area shape="rect" id="node3" href="$classmom__initialization.html#ad747f1526fcb5e7903225dce5136ccfe" title="mom_initialization\l::mom_initialize" alt="" coords="379,27,506,71"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="555,35,698,63"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="792,5,880,33"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="747,57,925,101"/>
+</map>

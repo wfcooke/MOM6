@@ -1,0 +1,7 @@
+<map id="mom_diagnostics::register_time_deriv" name="mom_diagnostics::register_time_deriv">
+<area shape="rect" id="node2" href="$classmom__diagnostics.html#a7f762ce74cd0612b59c6cc4fe3767571" title="mom_diagnostics::mom\l_diagnostics_init" alt="" coords="446,27,608,71"/>
+<area shape="rect" id="node6" href="$classmom__diagnostics.html#a90a92410576d955e89d2aa4e3f6d7402" title="mom_diagnostics::set\l_dependent_diagnostics" alt="" coords="232,57,398,101"/>
+<area shape="rect" id="node3" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="657,35,799,63"/>
+<area shape="rect" id="node4" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="894,5,981,33"/>
+<area shape="rect" id="node5" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="848,57,1027,101"/>
+</map>

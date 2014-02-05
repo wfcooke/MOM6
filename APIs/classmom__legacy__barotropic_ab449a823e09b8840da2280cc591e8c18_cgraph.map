@@ -1,0 +1,18 @@
+<map id="mom_legacy_barotropic::legacy_barotropic_init" name="mom_legacy_barotropic::legacy_barotropic_init">
+<area shape="rect" id="node2" href="$classmom__variables.html#a26d7f4002ba856a1929f5a3962eb0e99" title="mom_variables::alloc\l_bt_cont_type" alt="" coords="733,77,880,121"/>
+<area shape="rect" id="node3" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="1190,376,1336,420"/>
+<area shape="rect" id="node5" href="$classmom__barotropic.html#ab0a540850bc235e41077d3a31ad71e6c" title="mom_barotropic::find\l_face_areas" alt="" coords="457,103,604,147"/>
+<area shape="rect" id="node6" href="$classmom__legacy__barotropic.html#ae6e1e8ebf27a038f911880e880c69dfd" title="mom_legacy_barotropic\l::legacy_btcalc" alt="" coords="220,411,383,455"/>
+<area shape="rect" id="node7" href="$classmom__legacy__barotropic.html#aeb688e81f3058963dea145d1a8bec6a2" title="mom_legacy_barotropic\l::legacy_set_dtbt" alt="" coords="220,223,383,267"/>
+<area shape="rect" id="node10" href="$classmom__file__parser.html#a17c0ef1bb1912f02faa0aaa1e0f64210" title="mom_file_parser::log\l_version" alt="" coords="228,571,374,615"/>
+<area shape="rect" id="node15" href="$classmom__error__handler.html#a1c462df7b61f1296407b4af51dfeceab" title="mom_error_handler::\lmom_mesg" alt="" coords="988,733,1134,777"/>
+<area shape="rect" id="node16" href="$classmom__diag__mediator.html#a5e8cc98ee3d2ff639e862d78e56b7f5f" title="mom_diag_mediator::\lregister_diag_field" alt="" coords="986,52,1136,96"/>
+<area shape="rect" id="node4" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="1387,597,1533,641"/>
+<area shape="rect" id="node8" href="$classmom__barotropic.html#a69af48d24759b679d0431f09dc9da503" title="mom_barotropic::bt\l_cont_to_face_areas" alt="" coords="458,223,604,267"/>
+<area shape="rect" id="node9" href="$classmom__tidal__forcing.html#a0a1564c68489a35802c626a07f4629d7" title="mom_tidal_forcing::\ltidal_forcing_sensitivity" alt="" coords="451,291,610,335"/>
+<area shape="rect" id="node11" href="$classmom__document.html#a29ab772c411aedcc137942020c1ee042" title="mom_document::doc_module" alt="" coords="432,579,629,607"/>
+<area shape="rect" id="node12" href="$classmom__document.html#aab976b6c6c9c01833438d217fca228a4" title="mom_document::open\l_doc_file" alt="" coords="730,511,884,555"/>
+<area shape="rect" id="node14" href="$classmom__document.html#ad07b3bca0410218e0d969cef7509bf34" title="mom_document::writemessageanddesc" alt="" coords="678,579,935,607"/>
+<area shape="rect" id="node13" href="$classmom__document.html#a5f2661445a72a7d0f774677e91366db5" title="mom_document::find\l_unused_unit_number" alt="" coords="984,461,1138,505"/>
+<area shape="rect" id="node17" href="$classmom__diag__mediator.html#a2e5d9674bea456c0bf84dd4923d3bb74" title="mom_diag_mediator::\ldescribe_option" alt="" coords="1188,112,1338,156"/>
+</map>

@@ -1,0 +1,14 @@
+<map id="mom_diag_mediator::enable_averaging" name="mom_diag_mediator::enable_averaging">
+<area shape="rect" id="node2" href="$classmom__barotropic.html#a828252f637c848571d286014e557e590" title="mom_barotropic::btstep" alt="" coords="207,315,369,343"/>
+<area shape="rect" id="node3" href="$classmom__dynamics__split__rk2.html#aaa7dbc8f8ae57b6c39522573c63c716b" title="mom_dynamics_split\l_rk2::step_mom_dyn_split_rk2" alt="" coords="427,350,629,394"/>
+<area shape="rect" id="node4" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="685,358,806,386"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="902,78,989,106"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="854,457,1037,501"/>
+<area shape="rect" id="node7" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="217,91,359,119"/>
+<area shape="rect" id="node9" href="$classmom__legacy__barotropic.html#a5563f3acd58a172c88aa75251aabc470" title="mom_legacy_barotropic\l::legacy_btstep" alt="" coords="206,195,370,239"/>
+<area shape="rect" id="node10" href="$classmom__dynamics__legacy__split.html#a65e000d7f670ad4b21617f0061014428" title="mom_dynamics_legacy\l_split::step_mom_dyn\l_legacy_split" alt="" coords="448,266,608,326"/>
+<area shape="rect" id="node11" href="$ice__shelf__driver_8F90.html#aec5bef92f0dad343f545cd8d62e378d8" title="shelf_main" alt="" coords="245,470,331,498"/>
+<area shape="rect" id="node12" href="$classmom__dynamics__unsplit.html#a0af1fb7b41b4136e565cf808caae491f" title="mom_dynamics_unsplit\l::step_mom_dyn_unsplit" alt="" coords="445,487,611,531"/>
+<area shape="rect" id="node13" href="$classmom__dynamics__unsplit__rk2.html#a9ebda5bbb58c50dc40b147c3a42bdceb" title="mom_dynamics_unsplit\l_rk2::step_mom_dyn_unsplit_rk2" alt="" coords="419,198,637,242"/>
+<area shape="rect" id="node8" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="439,130,617,174"/>
+</map>

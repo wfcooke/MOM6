@@ -1,0 +1,20 @@
+<map id="mom_tracer_flow_control::tracer_flow_control_init" name="mom_tracer_flow_control::tracer_flow_control_init">
+<area shape="rect" id="node2" href="$classadvection__test__tracer.html#a69579ed825b263df25db19986746785b" title="advection_test_tracer\l::initialize_advection\l_test_tracer" alt="" coords="240,465,389,525"/>
+<area shape="rect" id="node4" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="875,625,1021,669"/>
+<area shape="rect" id="node9" href="$classdome__tracer.html#aa19bfc065ea691f3f0fc4f352f209955" title="dome_tracer::initialize\l_dome_tracer" alt="" coords="239,727,390,771"/>
+<area shape="rect" id="node12" href="$classideal__age__example.html#ae4b07ae8034e4a144ea485d1fe3e6d54" title="ideal_age_example::\linitialize_ideal_age\l_tracer" alt="" coords="242,549,387,609"/>
+<area shape="rect" id="node16" href="$classmom__ocmip2__cfc.html#a3a2d342a091bcbfe904eac1f5f805f6a" title="mom_ocmip2_cfc::initialize\l_ocmip2_cfc" alt="" coords="224,389,405,433"/>
+<area shape="rect" id="node18" href="$classoil__tracer.html#a14d3cad18f7bdf9059a9878c2d90e294" title="oil_tracer::initialize\l_oil_tracer" alt="" coords="249,304,380,348"/>
+<area shape="rect" id="node19" href="$classuser__tracer__example.html#adede17df0a4ee873194d05c4ccc32ebb" title="user_tracer_example\l::user_initialize_tracer" alt="" coords="239,795,390,839"/>
+<area shape="rect" id="node3" href="$classmom__tracer__registry.html#ad8f22ff588c9b56ee82a2abd449c9a3a" title="mom_tracer_registry\l::add_tracer_diagnostics" alt="" coords="454,625,621,669"/>
+<area shape="rect" id="node6" href="$classmom__diag__mediator.html#a5e8cc98ee3d2ff639e862d78e56b7f5f" title="mom_diag_mediator::\lregister_diag_field" alt="" coords="672,505,822,549"/>
+<area shape="rect" id="node8" href="$classmom__diag__to__z.html#aa4d97e8d218b8dfb09f2a773d038b6da" title="mom_diag_to_z::register\l_z_tracer" alt="" coords="453,557,621,601"/>
+<area shape="rect" id="node5" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="1072,625,1218,669"/>
+<area shape="rect" id="node7" href="$classmom__diag__mediator.html#a2e5d9674bea456c0bf84dd4923d3bb74" title="mom_diag_mediator::\ldescribe_option" alt="" coords="873,557,1023,601"/>
+<area shape="rect" id="node10" href="$classmom__tracer__registry.html#a6210b799ee25a114d4b87bdfaa6d0c7a" title="mom_tracer_registry\l::add_tracer_obc_values" alt="" coords="454,948,621,992"/>
+<area shape="rect" id="node11" href="$classmom__sponge.html#ac06e3993d6078db1d617b6c30f8a10c8" title="mom_sponge::set_up\l_sponge_field" alt="" coords="672,1059,821,1103"/>
+<area shape="rect" id="node13" href="$classmidas__vertmap.html#a6fc99abf8494224d21a6e15fb962ee16" title="midas_vertmap::tracer\l_z_init" alt="" coords="670,76,824,120"/>
+<area shape="rect" id="node14" href="$classmom__diag__to__z.html#a55f6203cfb483bb62c543f689ab30741" title="mom_diag_to_z::find\l_limited_slope" alt="" coords="875,43,1021,87"/>
+<area shape="rect" id="node15" href="$classmom__diag__to__z.html#a7bb6af99ccb5eb1daf7473663ca19aea" title="mom_diag_to_z::find\l_overlap" alt="" coords="875,111,1021,155"/>
+<area shape="rect" id="node17" href="$classmom__ocmip2__cfc.html#a11c40a4c4df8cb9d2e236b416216e2cd" title="mom_ocmip2_cfc::init\l_tracer_cfc" alt="" coords="462,184,612,228"/>
+</map>

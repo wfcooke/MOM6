@@ -1,0 +1,7 @@
+<map id="mom_domains::get_domain_extent" name="mom_domains::get_domain_extent">
+<area shape="rect" id="node2" href="$classmom__grid.html#a457baf772f460da97155d6ffdd54c848" title="mom_grid::mom_grid_init" alt="" coords="241,31,413,59"/>
+<area shape="rect" id="node3" href="$MOM__sum__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="490,5,577,33"/>
+<area shape="rect" id="node4" href="$classmom.html#afebdc0103ad9cbe0ed4a54e522dc4104" title="mom::initialize_mom" alt="" coords="462,57,605,85"/>
+<area shape="rect" id="node5" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="699,26,786,54"/>
+<area shape="rect" id="node6" href="$classocean__model__mod.html#aced9c77abd80a4a509c7cc317af707a7" title="ocean_model_mod::ocean\l_model_init" alt="" coords="653,78,832,122"/>
+</map>

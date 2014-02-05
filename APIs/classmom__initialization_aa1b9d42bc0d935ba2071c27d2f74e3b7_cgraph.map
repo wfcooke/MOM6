@@ -1,0 +1,8 @@
+<map id="mom_initialization::mom_initialize_rotation" name="mom_initialization::mom_initialize_rotation">
+<area shape="rect" id="node2" href="$classmom__error__handler.html#a9cda07a87815f0e5594066162b4345c3" title="mom_error_handler::\lcalltree_enter" alt="" coords="440,26,586,70"/>
+<area shape="rect" id="node4" href="$classmom__error__handler.html#a88ea67781e2ed9b73ab7eac8ea5e8578" title="mom_error_handler::\lcalltree_leave" alt="" coords="440,94,586,138"/>
+<area shape="rect" id="node5" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="440,162,586,206"/>
+<area shape="rect" id="node6" href="$classmom__initialization.html#a568e4e669091aaea0197d240e59e87e7" title="mom_initialization\l::set_rotation_beta_plane" alt="" coords="219,150,391,194"/>
+<area shape="rect" id="node7" href="$classmom__initialization.html#a23486506de035e8f009abf16083270e3" title="mom_initialization\l::set_rotation_planetary" alt="" coords="225,30,386,74"/>
+<area shape="rect" id="node3" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="635,94,781,138"/>
+</map>

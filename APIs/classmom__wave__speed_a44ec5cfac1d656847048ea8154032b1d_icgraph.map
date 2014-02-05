@@ -1,0 +1,8 @@
+<map id="mom_wave_speed::wave_speed" name="mom_wave_speed::wave_speed">
+<area shape="rect" id="node2" href="$classmom__lateral__mixing__coeffs.html#ae7b6e0c0cf17496054f99f4bedd63baa" title="mom_lateral_mixing\l_coeffs::calc_resoln\l_function" alt="" coords="250,5,390,65"/>
+<area shape="rect" id="node6" href="$classmom__diagnostics.html#a6671854d7b6dc5fba2cdae2ca7426bae" title="mom_diagnostics::calculate\l_diagnostic_fields" alt="" coords="227,89,413,133"/>
+<area shape="rect" id="node7" href="$classmom__diabatic__driver.html#a83f61407877a5da8907752f9bd1f034f" title="mom_diabatic_driver\l::diabatic" alt="" coords="247,157,393,201"/>
+<area shape="rect" id="node3" href="$classmom.html#a4c8332b095c6d295084089aa6b3b678a" title="mom::step_mom" alt="" coords="461,97,582,125"/>
+<area shape="rect" id="node4" href="$MOM__driver_8F90.html#a08fffeb2d8e8acbf9ed4609be6d258c6" title="mom_main" alt="" coords="678,66,765,94"/>
+<area shape="rect" id="node5" href="$classocean__model__mod.html#ac9dc1795fc4799d6682f462857b42d62" title="ocean_model_mod::update\l_ocean_model" alt="" coords="630,118,813,162"/>
+</map>

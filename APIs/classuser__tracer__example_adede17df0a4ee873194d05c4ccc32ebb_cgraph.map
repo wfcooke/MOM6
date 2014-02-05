@@ -1,0 +1,10 @@
+<map id="user_tracer_example::user_initialize_tracer" name="user_tracer_example::user_initialize_tracer">
+<area shape="rect" id="node2" href="$classmom__tracer__registry.html#ad8f22ff588c9b56ee82a2abd449c9a3a" title="mom_tracer_registry\l::add_tracer_diagnostics" alt="" coords="422,73,589,117"/>
+<area shape="rect" id="node3" href="$classmom__error__handler.html#a460cfb79a06c29fc249952c2a3710d67" title="mom_error_handler::\lmom_error" alt="" coords="640,150,786,194"/>
+<area shape="rect" id="node5" href="$classmom__tracer__registry.html#a6210b799ee25a114d4b87bdfaa6d0c7a" title="mom_tracer_registry\l::add_tracer_obc_values" alt="" coords="206,190,373,234"/>
+<area shape="rect" id="node6" href="$classmom__diag__mediator.html#a5e8cc98ee3d2ff639e862d78e56b7f5f" title="mom_diag_mediator::\lregister_diag_field" alt="" coords="430,294,580,338"/>
+<area shape="rect" id="node8" href="$classmom__diag__to__z.html#aa4d97e8d218b8dfb09f2a773d038b6da" title="mom_diag_to_z::register\l_z_tracer" alt="" coords="205,258,373,302"/>
+<area shape="rect" id="node9" href="$classmom__sponge.html#ac06e3993d6078db1d617b6c30f8a10c8" title="mom_sponge::set_up\l_sponge_field" alt="" coords="431,5,580,49"/>
+<area shape="rect" id="node4" href="$classmom__error__handler.html#ad5f00a53059c72fe2332d1436c80ca71" title="mom_error_handler::\lis_root_pe" alt="" coords="838,150,984,194"/>
+<area shape="rect" id="node7" href="$classmom__diag__mediator.html#a2e5d9674bea456c0bf84dd4923d3bb74" title="mom_diag_mediator::\ldescribe_option" alt="" coords="638,234,788,278"/>
+</map>
