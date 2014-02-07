@@ -20,6 +20,12 @@
 <script type="text/javascript">
   $(document).ready(function() { searchBox.OnSelectItem(0); });
 </script>
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX","output/HTML-CSS"],
+});
+</script><script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -112,7 +118,7 @@ $(document).ready(function(){initNavTree('classmom__kpp.html','');});
 </div><!--header-->
 <div class="contents">
 
-<p>This module provides the K-profile parameterization (aka KPP) of Large et al., 1994 (<a href="ftp://128.171.154.9/pub/rlukas/Thibault/Large%20etal%20RevGeo%201994.pdf">ftp://128.171.154.9/pub/rlukas/Thibault/Large%20etal%20RevGeo%201994.pdf</a>). KPP is implemented via the CVMix package (<a href="https://code.google.com/p/cvmix">https://code.google.com/p/cvmix</a>) which this module invokes.  
+<p>This module provides the K-Profile Parameterization (KPP) of Large et al., 1994.  
  <a href="classmom__kpp.html#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
@@ -147,22 +153,46 @@ Private Attributes</h2></td></tr>
 <tr class="memdesc:a8ce04e556df335d2920049e027319f95"><td class="mdescLeft">&#160;</td><td class="mdescRight">Use the CVmix profile.  <a href="#a8ce04e556df335d2920049e027319f95">More...</a><br/></td></tr>
 <tr class="separator:a8ce04e556df335d2920049e027319f95"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4082e47ef31d736769267b912a55cae"><td class="memItemLeft" align="right" valign="top">integer, parameter, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmom__kpp.html#ab4082e47ef31d736769267b912a55cae">nlt_shape_linear</a> = 1</td></tr>
-<tr class="memdesc:ab4082e47ef31d736769267b912a55cae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear, Cs.G(s) = 1-s.  <a href="#ab4082e47ef31d736769267b912a55cae">More...</a><br/></td></tr>
+<tr class="memdesc:ab4082e47ef31d736769267b912a55cae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linear, \( C_s G(\sigma) = 1-\sigma \).  <a href="#ab4082e47ef31d736769267b912a55cae">More...</a><br/></td></tr>
 <tr class="separator:ab4082e47ef31d736769267b912a55cae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d0b609996e88b8cc96070089c58a9bc"><td class="memItemLeft" align="right" valign="top">integer, parameter, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmom__kpp.html#a4d0b609996e88b8cc96070089c58a9bc">nlt_shape_parabolic</a> = 2</td></tr>
-<tr class="memdesc:a4d0b609996e88b8cc96070089c58a9bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parabolic, Cs.G(s) = (1-s)^2.  <a href="#a4d0b609996e88b8cc96070089c58a9bc">More...</a><br/></td></tr>
+<tr class="memdesc:a4d0b609996e88b8cc96070089c58a9bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parabolic, \( C_s G(s) = (1-\sigma)^2 \).  <a href="#a4d0b609996e88b8cc96070089c58a9bc">More...</a><br/></td></tr>
 <tr class="separator:a4d0b609996e88b8cc96070089c58a9bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4cccaa3c7e998023cce98a8aefdc9ec"><td class="memItemLeft" align="right" valign="top">integer, parameter, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmom__kpp.html#ae4cccaa3c7e998023cce98a8aefdc9ec">nlt_shape_cubic</a> = 3</td></tr>
-<tr class="memdesc:ae4cccaa3c7e998023cce98a8aefdc9ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cubic, G(s) =.  <a href="#ae4cccaa3c7e998023cce98a8aefdc9ec">More...</a><br/></td></tr>
+<tr class="memdesc:ae4cccaa3c7e998023cce98a8aefdc9ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cubic, \( C_s. G(\sigma) = \) ???  <a href="#ae4cccaa3c7e998023cce98a8aefdc9ec">More...</a><br/></td></tr>
 <tr class="separator:ae4cccaa3c7e998023cce98a8aefdc9ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7fe55c332f4b25ba6a15be447243a86"><td class="memItemLeft" align="right" valign="top">integer, parameter, private&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmom__kpp.html#ab7fe55c332f4b25ba6a15be447243a86">nlt_shape_cubic_lmd</a> = 4</td></tr>
-<tr class="memdesc:ab7fe55c332f4b25ba6a15be447243a86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Original shape, Cs.G(s) = 27/4.s.(1-s)^2.  <a href="#ab7fe55c332f4b25ba6a15be447243a86">More...</a><br/></td></tr>
+<tr class="memdesc:ab7fe55c332f4b25ba6a15be447243a86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Original shape, \( C_s G(\sigma) = \frac{27}{4} \sigma (1-\sigma)^2 \).  <a href="#ab7fe55c332f4b25ba6a15be447243a86">More...</a><br/></td></tr>
 <tr class="separator:ab7fe55c332f4b25ba6a15be447243a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This module provides the K-profile parameterization (aka KPP) of Large et al., 1994 (<a href="ftp://128.171.154.9/pub/rlukas/Thibault/Large%20etal%20RevGeo%201994.pdf">ftp://128.171.154.9/pub/rlukas/Thibault/Large%20etal%20RevGeo%201994.pdf</a>). KPP is implemented via the CVMix package (<a href="https://code.google.com/p/cvmix">https://code.google.com/p/cvmix</a>) which this module invokes. </p>
+<div class="textblock"><p>This module provides the K-Profile Parameterization (KPP) of Large et al., 1994. </p>
+<h1><a class="anchor" id="section_KPP"></a>
+The K-Profile Parameterization</h1>
+<p>The K-Profile Parameterization (KPP) of Large et al., 1994, (<a href="http://dx.doi.org/10.1029/94RG01872">http://dx.doi.org/10.1029/94RG01872</a>) is implemented via the Community Vertical Mixing package, <a href="https://code.google.com/p/cvmix">CVmix</a>, which is called directly by this module. The formulation and implementation of KPP is described in great detail in the <a href="https://cvmix.googlecode.com/svn/trunk/manual/cvmix.pdf">CVMix manual</a> (written by our own Stephen Griffies).</p>
+<h2><a class="anchor" id="section_KPP_nutshell"></a>
+KPP in a nutshell</h2>
+<p>Large et al., 1994, decompose the parameterized boundary layer turbulent flux of a scalar, \( s \), as </p>
+<p class="formulaDsp">
+\[ \overline{w^\prime s^\prime} = -K \partial_z s + K \gamma_s(\sigma), \]
+</p>
+<p> where \( \sigma = -z/h \) is a non-dimensional coordinate within the boundary layer of depth \( h \). \( K \) is the eddy diffusivity and is a function of position within the boundary layer as well as a function of the surface forcing: </p>
+<p class="formulaDsp">
+\[ K = h w_s(\sigma) G(\sigma) . \]
+</p>
+<p> Here, \( w_s \) is the vertical velocity scale of the boundary layer turbulence and \( G(\sigma) \) is a "shape function" which is described later. The last term is the "non-local transport" which involves a function \( \gamma_s(\sigma) \) that is matched to the forcing but is not actually needed in the final implementation. Instead, the entire non-local transport term can be equivalently written </p>
+<p class="formulaDsp">
+\[ K \gamma_s(\sigma) = C_s G(\sigma) Q_s \]
+</p>
+<p> where \( Q_s \) is the surface flux of \( s \) and \( C_s \) is a constant. The vertical structure of the redistribution (non-local) term is solely due to the shape function, \( G(\sigma) \). In our implementation of KPP, we allow the shape functions used for \( K \) and for the non-local transport to be chosen independently.</p>
+<p>The particular shape function most widely used in the atmospheric community is </p>
+<p class="formulaDsp">
+\[ G(\sigma) = \sigma (1-\sigma)^2 \]
+</p>
+<p> which satisfies the boundary conditions \( G(0) = 0 \), \( G(1) = 0 \), \( G^\prime(0) = 1 \), and \( G^\prime(1) = 0 \). Large et al, 1994, alter the function so as to match interior diffusivities but we have found that this leads to inconsistencies within the formulation (see google groups thread <a href="https://groups.google.com/forum/#!msg/cvmix-dev/i6rF-eHOtKI/Ti8BeyksrhAJ" title="Extreme values of non-local transport">Extreme values of non-local transport</a>). Instead, we use either the above form, or even simpler forms that use alternative upper boundary conditions.</p>
+<dl class="section see"><dt>See Also</dt><dd><a class="el" href="classmom__kpp.html#a11439e340572299e8db01db577167942" title="Calculates diffusivity and non-local transport according to KPP parameterization. ...">kpp_calculate()</a> <a class="el" href="classmom__kpp.html#a8f5c2ab64213847ab5ab81eaecb33453" title="Applies the KPP non-local transport of surface fluxes; only available for tracers. ">kpp_applynonlocaltransport()</a> </dd></dl>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00005">5</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00059">59</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 </div><h2 class="groupheader">Member Function/Subroutine Documentation</h2>
 <a class="anchor" id="a8f5c2ab64213847ab5ab81eaecb33453"></a>
 <div class="memitem">
@@ -246,7 +276,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00792">792</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00846">846</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 <p>Referenced by <a class="el" href="MOM__diabatic__driver_8F90_source.html#l00207">mom_diabatic_driver::diabatic()</a>.</p>
 
@@ -385,7 +415,7 @@ Here is the caller graph for this function:</div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00308">308</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00362">362</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 <p>Referenced by <a class="el" href="MOM__diabatic__driver_8F90_source.html#l00207">mom_diabatic_driver::diabatic()</a>.</p>
 
@@ -422,7 +452,7 @@ Here is the caller graph for this function:</div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00844">844</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00898">898</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 <p>Referenced by <a class="el" href="MOM__diabatic__driver_8F90_source.html#l01671">mom_diabatic_driver::diabatic_driver_end()</a>.</p>
 
@@ -498,7 +528,7 @@ Here is the caller graph for this function:</div>
   </dd>
 </dl>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00108">108</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00162">162</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 <p>References <a class="el" href="MOM__file__parser_8F90_source.html#l01667">mom_file_parser::closeparameterblock()</a>, <a class="el" href="MOM__file__parser_8F90_source.html#l01146">mom_file_parser::log_version()</a>, <a class="el" href="MOM__error__handler_8F90_source.html#l00071">mom_error_handler::mom_error()</a>, <a class="el" href="MOM__file__parser_8F90_source.html#l01651">mom_file_parser::openparameterblock()</a>, and <a class="el" href="MOM__diag__mediator_8F90_source.html#l00503">mom_diag_mediator::register_diag_field()</a>.</p>
 
@@ -543,9 +573,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p>Cubic, G(s) =. </p>
+<p>Cubic, \( C_s. G(\sigma) = \) ??? </p>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00036">36</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00090">90</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 </div>
 </div>
@@ -567,9 +597,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p>Original shape, Cs.G(s) = 27/4.s.(1-s)^2. </p>
+<p>Original shape, \( C_s G(\sigma) = \frac{27}{4} \sigma (1-\sigma)^2 \). </p>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00037">37</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00091">91</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 </div>
 </div>
@@ -593,7 +623,7 @@ Here is the caller graph for this function:</div>
 
 <p>Use the CVmix profile. </p>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00033">33</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00087">87</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 </div>
 </div>
@@ -615,9 +645,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p>Linear, Cs.G(s) = 1-s. </p>
+<p>Linear, \( C_s G(\sigma) = 1-\sigma \). </p>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00034">34</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00088">88</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 </div>
 </div>
@@ -639,9 +669,9 @@ Here is the caller graph for this function:</div>
 </table>
 </div><div class="memdoc">
 
-<p>Parabolic, Cs.G(s) = (1-s)^2. </p>
+<p>Parabolic, \( C_s G(s) = (1-\sigma)^2 \). </p>
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00035">35</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00089">89</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 </div>
 </div>
@@ -655,7 +685,7 @@ Here is the caller graph for this function:</div>
       </table>
 </div><div class="memdoc">
 
-<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00101">101</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
+<p>Definition at line <a class="el" href="MOM__KPP_8F90_source.html#l00155">155</a> of file <a class="el" href="MOM__KPP_8F90_source.html">MOM_KPP.F90</a>.</p>
 
 </div>
 </div>
