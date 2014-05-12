@@ -67,6 +67,7 @@ use MOM_io, only : create_file, fieldtype, flush_file, open_file, reopen_file
 use MOM_io, only : file_exists, slasher, vardesc, write_field
 use MOM_io, only : APPEND_FILE, ASCII_FILE, SINGLE_FILE, WRITEONLY_FILE
 use MOM_time_manager, only : time_type, get_time, set_time, operator(>), operator(-)
+use MOM_time_manager, only : get_date, set_date
 use MOM_tracer_flow_control, only : tracer_flow_control_CS, call_tracer_stocks
 use MOM_variables, only : surface, thermo_var_ptrs
 
@@ -394,6 +395,8 @@ subroutine write_energy(u, v, h, tv, day, n, G, CS, tracer_CSp)
   integer :: nTr_stocks
   real, allocatable :: toten_PE(:)
   integer :: pe_num
+  integer :: iyr, imon, iday, ihr, imin, isec, daysperyear
+  type(time_type) :: this_year
 
  ! A description for output of each of the fields.
   type(vardesc) :: vars(NUM_FIELDS+MAX_FIELDS_)
@@ -527,15 +530,15 @@ subroutine write_energy(u, v, h, tv, day, n, G, CS, tracer_CSp)
                        action=WRITEONLY_FILE, form=ASCII_FILE, nohdrs=.true.)
         if (abs(CS%timeunit - 86400.0) < 1.0) then
           if (CS%use_temperature) then
-            write(CS%fileenergy_ascii,'("  Step,",7x,"Day,  Truncs,      &
+            write(CS%fileenergy_ascii,'("  Step,",7x,"Day,      Truncs,      &
                 &Energy/Mass,      Maximum CFL,  Mean Sea Level,  Total Mass,  Mean Salin, &
                 &Mean Temp, Frac Mass Err,   Salin Err,    Temp Err")')
-            write(CS%fileenergy_ascii,'(12x,"[days]",17x,"[m2 s-2]",11x,"[Nondim]",7x,"[m]",13x,&
+            write(CS%fileenergy_ascii,'(9x,"[year], [days]",17x,"[m2 s-2]",11x,"[Nondim]",7x,"[m]",13x,&
                 &"[kg]",9x,"[PSU]",6x,"[degC]",7x,"[Nondim]",8x,"[PSU]",8x,"[degC]")')
           else
-            write(CS%fileenergy_ascii,'("  Step,",7x,"Day,  Truncs,      &
+            write(CS%fileenergy_ascii,'("  Step,",7x,"Day,      Truncs,      &
                 &Energy/Mass,      Maximum CFL,  Mean sea level,   Total Mass,    Frac Mass Err")')
-            write(CS%fileenergy_ascii,'(12x,"[days]",17x,"[m2 s-2]",11x,"[Nondim]",8x,"[m]",13x,&
+            write(CS%fileenergy_ascii,'(9x,"[year], [days]",17x,"[m2 s-2]",11x,"[Nondim]",8x,"[m]",13x,&
                 &"[kg]",11x,"[Nondim]")')
           endif
         else
@@ -784,6 +787,14 @@ subroutine write_energy(u, v, h, tv, day, n, G, CS, tracer_CSp)
   En_mass = toten / mass_tot
 
   call get_time(day, start_of_day, num_days)
+  !Determine the current year: iyr
+  call get_date(day, iyr, imon, iday, ihr, imin, isec)
+  !Determine the days past till the current year: iday
+  this_year = set_date(iyr,1,1,0,0,0)      
+  call get_time(this_year, isec, iday)
+  !Modify num_days to be number of days in the current year
+  num_days = num_days - iday
+
   if (abs(CS%timeunit - 86400.0) < 1.0) then
     reday = REAL(num_days)+ (REAL(start_of_day)/86400.0)
     mesg_intro = "MOM Day "
@@ -792,9 +803,9 @@ subroutine write_energy(u, v, h, tv, day, n, G, CS, tracer_CSp)
             REAL(start_of_day)/abs(CS%timeunit)
     mesg_intro = "MOM Time "
   endif
-  if (reday < 1.0e8) then ;      write(day_str, '(F12.3)') reday
-  elseif (reday < 1.0e11) then ; write(day_str, '(F15.3)') reday
-  else ;                         write(day_str, '(ES15.9)') reday ; endif
+  if (reday < 1.0e8) then ;      write(day_str, '(I6,",",F8.3)') iyr,reday
+  elseif (reday < 1.0e11) then ; write(day_str, '(I6,",",F15.3)') iyr,reday
+  else ;                         write(day_str, '(I6,",",ES15.9)') iyr,reday ; endif
 
   if     (n < 1000000)   then ; write(n_str, '(I6)')  n
   elseif (n < 10000000)  then ; write(n_str, '(I7)')  n
