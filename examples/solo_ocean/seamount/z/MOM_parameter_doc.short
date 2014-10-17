@@ -185,6 +185,7 @@ THICKNESS_CONFIG = "seamount"   !
                                 !     adjustment2d - TBD AJA.
                                 !     sloshing - TBD AJA.
                                 !     seamount - TBD AJA.
+                                !     rossby_front - a mixed layer front in thermal wind balance.
                                 !     USER - call a user modified routine.
 MIN_THICKNESS = 0.1             !   [m] default = 0.001
                                 ! Minimum thickness for layer
@@ -203,6 +204,7 @@ TS_CONFIG = "seamount"          !
                                 !     adjustment2d - TBD AJA.
                                 !     sloshing - TBD AJA.
                                 !     seamount - TBD AJA.
+                                !     rossby_front - a mixed layer front in thermal wind balance.
                                 !     USER - call a user modified routine.
 REGRIDDING_COORDINATE_MODE = "Z*" ! default = "LAYER"
                                 ! Coordinate mode for vertical regridding.
@@ -251,9 +253,6 @@ REMAPPING_SCHEME = "PPM_IH4"    ! default = "PLM"
                                 ! PQM_IH6IH5  (5th-order accurate)
 
 ! === module MOM_MEKE ===
-CDRAG = 0.002                   !   [nondim] default = 0.003
-                                ! CDRAG is the drag coefficient relating the magnitude of
-                                ! the velocity field to the bottom stress.
 
 ! === module MOM_lateral_mixing_coeffs ===
 BE = 0.7                        !   [nondim] default = 0.6
@@ -338,6 +337,10 @@ MAXVEL = 10.0                   !   [m s-1] default = 3.0E+08
 LINEAR_DRAG = True              !   [Boolean] default = False
                                 ! If LINEAR_DRAG and BOTTOMDRAGLAW are defined the drag
                                 ! law is cdrag*DRAG_BG_VEL*u.
+CDRAG = 0.002                   !   [nondim] default = 0.003
+                                ! CDRAG is the drag coefficient relating the magnitude of
+                                ! the velocity field to the bottom stress. CDRAG is only
+                                ! used if BOTTOMDRAGLAW is defined.
 DRAG_BG_VEL = 0.05              !   [m s-1] default = 0.0
                                 ! DRAG_BG_VEL is either the assumed bottom velocity (with
                                 ! LINEAR_DRAG) or an unresolved  velocity that is
@@ -378,6 +381,8 @@ DTBT = 10.0                     !   [s or nondim] default = -0.98
 ! === module MOM_thickness_diffuse ===
 KHTH = 500.0                    !   [m2 s-1] default = 0.0
                                 ! The background horizontal thickness diffusivity.
+
+! === module MOM_mixed_layer_restrat ===
 
 ! === module MOM_diabatic_driver ===
 ! The following parameters are used for diabatic processes.

@@ -1,16 +1,16 @@
 "GOLD Experiment"
 1 1 1 0 0 0
-"prog",     5,"days",1,"days","Time",
-"ave_prog", 5,"days",1,"days","Time",
-"cont",     5,"days",1,"days","Time",
+"prog",     10,"days",1,"days","Time",
+"ave_prog", 10,"days",1,"days","Time",
+"cont",     10,"days",1,"days","Time",
 #"diag",    10,"days",1,"days","Time",
-#"trac",     5,"days",1,"days","Time",
-#"mom",      5,"days",1,"days","Time",
-#"bt_mom",   5,"days",1,"days","Time",
-#"visc",     5,"days",1,"days","Time",
-#"energy",   5,"days",1,"days","Time",
-#"ML_TKE",   5,"days",1,"days","Time",
-#"forcing",  5,"days",1,"days","Time",
+#"trac",    10,"days",1,"days","Time",
+#"mom",     10,"days",1,"days","Time",
+#"bt_mom",  10,"days",1,"days","Time",
+"visc",     10,"days",1,"days","Time",
+#"energy",  10,"days",1,"days","Time",
+#"ML_TKE",  10,"days",1,"days","Time",
+#"forcing", 10,"days",1,"days","Time",
 
 #This is the field section of the diag_table.
 
@@ -21,6 +21,15 @@
 "ocean_model","v","v","prog","all",.false.,"none",2
 "ocean_model","h","h","prog","all",.false.,"none",1
 "ocean_model","e","e","prog","all",.false.,"none",2
+#"ocean_model","Khh","Khh","prog","all",.false.,"none",2
+#"ocean_model","Khq","Khq","prog","all",.false.,"none",2
+"ocean_model","Ahh","Ahh","prog","all",.false.,"none",2
+"ocean_model","Ahq","Ahq","prog","all",.false.,"none",2
+"ocean_model","KHTH_u1","KHTH_u1","prog","all",.false.,"none",2
+"ocean_model","KHTH_v1","KHTH_v1","prog","all",.false.,"none",2
+"ocean_model","Res_fn","Res_fn","prog","all",.false.,"none",2
+"ocean_model","Rd_dx","Rd_dx","prog","all",.false.,"none",2
+"ocean_model","cg1","cg1","prog","all",.false.,"none",2
 #"ocean_model","temp","temp","prog","all",.false.,"none",2
 #"ocean_model","salt","salt","prog","all",.false.,"none",2
 #"ocean_model","Rml","Rml","prog","all",.false.,"none",2
@@ -41,6 +50,11 @@
 #"ocean_model","temp","temp","ave_prog","all",.true.,"none",2
 #"ocean_model","salt","salt","ave_prog","all",.true.,"none",2
 #"ocean_model","Rml","Rml","ave_prog","all",.true.,"none",2
+#"ocean_model","MEKE_KH","MEKE_KH","ave_prog","all",.true.,"none",2
+"ocean_model","KHTH_u","KHTH_u","ave_prog","all",.true.,"none",2
+"ocean_model","KHTH_v","KHTH_v","ave_prog","all",.true.,"none",2
+"ocean_model","KHTH_u1","KHTH_u1","ave_prog","all",.true.,"none",2
+"ocean_model","KHTH_v1","KHTH_v1","ave_prog","all",.true.,"none",2
 
 #"ocean_model","w_sponge","w_sponge","diag","all",.true.,"none",2
 #"ocean_model","Rd1","Rd1","diag","all",.true.,"none",2
@@ -171,7 +185,7 @@
 #"ocean_model","taux","taux","forcing","all",.true.,"none",2
 #"ocean_model","tauy","tauy","forcing","all",.true.,"none",2
 #"ocean_model","ustar","ustar","forcing","all",.true.,"none",2
-#"ocean_model","PmE","PmE","forcing","all",.true.,"none",2
+#"ocean_model","PRCmE","PRCmE","forcing","all",.true.,"none",2
 #"ocean_model","SW","SW","forcing","all",.true.,"none",2
 #"ocean_model","LwLatSens","LwLatSens","forcing","all",.true.,"none",2
 #"ocean_model","p_surf","p_surf","forcing","all",.true.,"none",2

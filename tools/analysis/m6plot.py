@@ -9,7 +9,7 @@ except:
   import matplotlib
   matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.colors import BoundaryNorm, ListedColormap
+from matplotlib.colors import BoundaryNorm, ListedColormap, LogNorm
 from matplotlib.ticker import MaxNLocator
 import math
 import numpy, numpy.matlib
@@ -22,7 +22,7 @@ def xyplot(field, x=None, y=None, area=None,
   clim=None, colormap=None, extend=None, centerlabels=False,
   nbins=None, landcolor=[.5,.5,.5],
   aspect=[16,9], resolution=576, axis=None,
-  ignore=None, save=None, debug=False, show=False, interactive=False):
+  ignore=None, save=None, debug=False, show=False, interactive=False, logscale=False):
   """
   Renders plot of scalar field, field(x,y).
 
@@ -53,6 +53,7 @@ def xyplot(field, x=None, y=None, area=None,
   debug        If true, report stuff for debugging. Default False.
   show         If true, causes the figure to appear on screen. Used for testing. Default False.
   interactive  If true, adds interactive features such as zoom, close and cursor. Default False.
+  logscale     If true, use logaritmic coloring scheme. Default False.
   """
 
   # Create coordinates if not provided
@@ -70,7 +71,7 @@ def xyplot(field, x=None, y=None, area=None,
   # Choose colormap
   if nbins==None and (clim==None or len(clim)==2): nbins=35
   if colormap==None: colormap = chooseColorMap(sMin, sMax)
-  cmap, norm, extend = chooseColorLevels(sMin, sMax, colormap, clim=clim, nbins=nbins, extend=extend)
+  cmap, norm, extend = chooseColorLevels(sMin, sMax, colormap, clim=clim, nbins=nbins, extend=extend, logscale=logscale)
 
   if axis==None:
     setFigureSize(aspect, resolution, debug=debug)
@@ -430,6 +431,9 @@ def yzcompare(field1, field2, y=None, z=None,
     if centerlabels and len(clim)>2: cb1.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
     axis.set_axis_bgcolor(landcolor)
     plt.xlim( xLims ); plt.ylim( yLims )
+    if splitscale!=None:
+      for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
+      axis.set_yscale('splitscale', zval=splitscale)
     annotateStats(axis, s1Min, s1Max, s1Mean, s1Std, s1RMS)
     axis.set_xticklabels([''])
     if len(zlabel+zunits)>0: plt.ylabel(label(zlabel, zunits))
@@ -442,6 +446,9 @@ def yzcompare(field1, field2, y=None, z=None,
     if centerlabels and len(clim)>2: cb2.set_ticks(  0.5*(clim[:-1]+clim[1:]) )
     axis.set_axis_bgcolor(landcolor)
     plt.xlim( xLims ); plt.ylim( yLims )
+    if splitscale!=None:
+      for zzz in splitscale[1:-1]: plt.axhline(zzz,color='k',linestyle='--')
+      axis.set_yscale('splitscale', zval=splitscale)
     annotateStats(axis, s2Min, s2Max, s2Mean, s2Std, s2RMS)
     if npanels>2: axis.set_xticklabels([''])
     if len(zlabel+zunits)>0: plt.ylabel(label(zlabel, zunits))
@@ -483,7 +490,7 @@ def chooseColorMap(sMin, sMax):
   else: return 'spectral'
 
 
-def chooseColorLevels(sMin, sMax, colorMapName, clim=None, nbins=None, steps=[1,2,2.5,5,10], extend=None):
+def chooseColorLevels(sMin, sMax, colorMapName, clim=None, nbins=None, steps=[1,2,2.5,5,10], extend=None, logscale=False):
   """
   If nbins is a positive integer, choose sensible color levels with nbins colors.
   If clim is a 2-element tuple, create color levels within the clim range
@@ -518,7 +525,8 @@ def chooseColorLevels(sMin, sMax, colorMapName, clim=None, nbins=None, steps=[1,
   #cmap = ListedColormap(cmap(range(eColors[0],nColors+1-eColors[1]+eColors[0])))#, N=nColors)
   #if eColors[0]>0: cmap.set_under(cmap0)
   #if eColors[1]>0: cmap.set_over(cmap1)
-  norm = BoundaryNorm(levels, ncolors=cmap.N)
+  if logscale: norm = LogNorm(vmin=levels[0], vmax=levels[-1])
+  else: norm = BoundaryNorm(levels, ncolors=cmap.N)
   return cmap, norm, extend
 
 

@@ -49,8 +49,11 @@ ICE_SEES_ATMOS_WINDS = True     !   [Boolean] default = True
                                 ! If true, the sea ice is being given wind stresses with
                                 ! the atmospheric sign convention, and need to have their
                                 ! sign changed.
-ICE_BULK_SALINITY = 0.005       !   [kg/kg] default = 0.004
+ICE_BULK_SALINITY = 5.0         !   [g/kg] default = 4.0
                                 ! The fixed bulk salinity of sea ice.
+ICE_RELATIVE_SALINITY = 0.0     !   [nondim] default = 0.0
+                                ! The initial salinity of sea ice as a fraction of the
+                                ! salinity of the seawater from which it formed.
 DO_ICE_RESTORE = False          !   [Boolean] default = False
                                 ! If true, restore the sea ice state toward climatology.
 APPLY_ICE_LIMIT = False         !   [Boolean] default = False
@@ -71,6 +74,8 @@ ADD_DIURNAL_SW = False          !   [Boolean] default = False
 DO_SUN_ANGLE_FOR_ALB = False    !   [Boolean] default = False
                                 ! If true, find the sun angle for calculating the ocean
                                 ! albedo within the sea ice model.
+DO_RIDGING = False              !   [Boolean] default = False
+                                ! If true, call the ridging routines.
 TIMEUNIT = 8.64E+04             !   [s] default = 8.64E+04
                                 ! The time unit for ICE_STATS_INTERVAL.
 ICE_STATS_INTERVAL = 0.25       !   [days] default = 1.0
@@ -159,6 +164,9 @@ NK_SNOW = 1                     !   [nondim] default = 1
 SET_GRID_LIKE_SIS1 = False      !   [Boolean] default = False
                                 ! If true, use SIS1 code to set the grid values.  Otherwise
                                 ! use code derived from MOM6.
+H_TO_KG_M2 = 1.0                !   [kg m-2 H-1] default = 1.0
+                                ! A constant that translates thicknesses from the model's
+                                ! internal units of thickness to kg m-2.
 GRID_FILE = "ocean_hgrid.nc"    !
                                 ! Name of the file from which to read horizontal grid data.
 AVAILABLE_DIAGS_FILE = "SIS.available_diags" ! default = "SIS.available_diags"
@@ -172,12 +180,22 @@ GRID_CONFIG = "mosaic"          !
                                 !    cartesian - a Cartesian grid
                                 !    spherical - a spherical grid
                                 !    mercator  - a Mercator grid
-CP_WATER = 4200.0               !   [J kg-1 K-1] default = 4200.0
-                                ! The heat capacity of sea water, approximated as a
-                                ! constant.
 CP_ICE = 2100.0                 !   [J kg-1 K-1] default = 2100.0
                                 ! The heat capacity of fresh ice, approximated as a
                                 ! constant.
+CP_SEAWATER = 4200.0            !   [J kg-1 K-1] default = 4200.0
+                                ! The heat capacity of sea water, approximated as a
+                                ! constant.
+CP_WATER = 4200.0               !   [J kg-1 K-1] default = 4200.0
+                                ! The heat capacity of water in sea-ice, approximated as
+                                ! a constant.  CP_WATER and CP_SEAWATER should be equal,
+                                ! but for computational convenience CP_WATER has often
+                                ! been set equal to CP_ICE instead.
+CP_BRINE = 2100.0               !   [J kg-1 K-1] default = 2100.0
+                                ! The heat capacity of water in brine pockets within the
+                                ! sea-ice, approximated as a constant.  CP_BRINE and
+                                ! CP_WATER should be equal, but for computational
+                                ! convenience CP_BRINE has often been set equal to CP_ICE.
 DTFREEZE_DS = -0.054            !   [deg C PSU-1] default = -0.054
                                 ! The derivative of the freezing temperature with salinity.
 ENTHALPY_LIQUID_0 = 0.0         !   [J kg-1] default = 0.0
@@ -197,6 +215,13 @@ ICE_CONDUCTIVITY = 2.03         !   [W m-1 K-1] default = 2.03
 DO_DELTA_EDDINGTON_SW = True    !   [Boolean] default = True
                                 ! If true, a delta-Eddington radiative transfer calculation
                                 ! for the shortwave radiation within the sea-ice.
+ICE_TEMP_RANGE_ESTIMATE = 40.0  !   [degC] default = 40.0
+                                ! An estimate of the range of snow and ice temperatures
+                                ! that is used to evaluate whether an explicit diffusive
+                                ! form of the heat fluxes or an inversion based on the
+                                ! layer heat budget is more likely to be more accurate.
+                                ! Setting this to 0 causes the explicit diffusive form.
+                                ! to always be used.
 ICE_DELTA_EDD_R_ICE = 0.0       !   [perhaps nondimensional?] default = 0.0
                                 ! A dreadfully documented tuning parameter for the radiative
                                 ! propeties of sea ice with the delta-Eddington radiative
@@ -256,13 +281,22 @@ SEA_ICE_ROLL_FACTOR = 1.0       !   [Nondim] default = 1.0
                                 ! minimum number of ice floes in a grid cell divided by
                                 ! the horizontal floe aspect ratio.  Sensible values are
                                 ! 0 (no rolling) or larger than 1.
-SIS1_ICE_TRANSPORT = False      !   [Boolean] default = False
-                                ! If true, use SIS1 code to solve the ice continuity
-                                ! equation and transport tracers.
 CHECK_ICE_TRANSPORT_CONSERVATION = False !   [Boolean] default = False
                                 ! If true, use add multiple diagnostics of ice and snow
                                 ! mass conservation in the sea-ice transport code.  This
                                 ! is expensive and should be used sparingly.
+
+! === module SIS_tracer_advect ===
+DT = -1.0                       !   [s] default = -1.0
+                                ! The (baroclinic) dynamics time step.
+SIS_TRACER_ADVECTION_SCHEME = "UPWIND_2D" ! default = "UPWIND_2D"
+                                ! The horizontal transport scheme for tracers:
+                                !   UPWIND_2D - Non-directionally split upwind
+                                !   PCM    - Directionally split peicewise constant
+                                !   PLM    - Piecewise Linear Method
+                                !   PPM:H3 - Piecewise Parabolic Method (Huyhn 3rd order)
+
+! === module SIS_tracer_registry ===
 
 ! === module SIS_sum_output ===
 WRITE_STOCKS = True             !   [Boolean] default = True
@@ -271,8 +305,6 @@ WRITE_STOCKS = True             !   [Boolean] default = True
 STDOUT_HEARTBEAT = True         !   [Boolean] default = True
                                 ! If true, periodically write sea ice statistics to
                                 ! stdout to allow the progress to be seen.
-DT = -1.0                       !   [s] default = -1.0
-                                ! The sea ice dynamics time step.
 STATISTICS_FILE = "seaice.stats" ! default = "seaice.stats"
                                 ! The file to use to write the globally integrated
                                 ! statistics.

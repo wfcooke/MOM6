@@ -1,16 +1,11 @@
 GOLD_SIS
 1 1 1 0 0 0 
 #output files
-# "ice_month",      1,  "months", 1, "days", "time",
-# "ocean_month",    1,  "months", 1, "days", "time",
-# "ocean_month_z",  1,  "months", 1, "days", "time",
-# "flux_month",     1,  "months", 1, "days", "time"
-
-"ice_month",      5,  "days", 1, "days", "time",
-"ocean_month",    5,  "days", 1, "days", "time",
+"ice_month",      1,  "months", 1, "days", "time",
+"ocean_month",    1,  "months", 1, "days", "time",
+"ocean_month_z",  1,  "months", 1, "days", "time",
+"flux_month",     1,  "months", 1, "days", "time"
 "ocean_sfc",      1,  "days", 1, "days", "time",
-"ocean_month_z",  5,  "days", 1, "days", "time",
-# "flux_month",     5,  "days", 1, "days", "time"
 "ocean_static",  -1,  "months", 1, "days", "time",
 #"ocean_scalar",   1,  "months", 1, "days", "time"
 #
@@ -46,12 +41,12 @@ GOLD_SIS
 #
 # Z-space fields:
 #==================
-"ocean_model","u_z","u","ocean_month_z","all",.true.,"none",2
-"ocean_model","v_z","v","ocean_month_z","all",.true.,"none",2
-"ocean_model","temp_z","temp","ocean_month_z","all",.true.,"none",2
-"ocean_model","salt_z","salt","ocean_month_z","all",.true.,"none",2
-#"ocean_model","vintage_z","vintage","ocean_month_z","all",.true.,"none",2
-"ocean_model","age_z","age","ocean_month_z","all",.true.,"none",2
+"ocean_model_z","u","u","ocean_month_z","all",.true.,"none",2
+"ocean_model_z","v","v","ocean_month_z","all",.true.,"none",2
+"ocean_model_z","temp","temp","ocean_month_z","all",.true.,"none",2
+"ocean_model_z","salt","salt","ocean_month_z","all",.true.,"none",2
+#"ocean_model_z","vintage","vintage","ocean_month_z","all",.true.,"none",2
+"ocean_model_z","age","age","ocean_month_z","all",.true.,"none",2
 
 # Continuity Equation Terms:
 #===========================
@@ -173,15 +168,35 @@ GOLD_SIS
 #
 # Surface Forcing:
 #=================
-"ocean_model","taux",     "taux",     "ocean_month","all",.true.,"none",2
-"ocean_model","tauy",     "tauy",     "ocean_month","all",.true.,"none",2
-"ocean_model","ustar",    "ustar",    "ocean_month","all",.true.,"none",2
-"ocean_model","PmE",      "PmE",      "ocean_month","all",.true.,"none",2
-"ocean_model","SW",       "SW",       "ocean_month","all",.true.,"none",2
-"ocean_model","LwLatSens","LwLatSens","ocean_month","all",.true.,"none",2
-"ocean_model","p_surf",   "p_surf",   "ocean_month","all",.true.,"none",2
-"ocean_model","salt_flux","salt_flux","ocean_month","all",.true.,"none",2
+"ocean_model","taux","taux",                                    "ocean_month","all",.true.,"none",2
+"ocean_model","tauy","tauy",                                    "ocean_month","all",.true.,"none",2
+"ocean_model","ustar","ustar",                                  "ocean_month","all",.true.,"none",2
+"ocean_model","p_surf","p_surf",                                "ocean_month","all",.true.,"none",2
+"ocean_model","PRCmE","PRCmE",                                  "ocean_month","all",.true.,"none",2
+"ocean_model","lrunoff","lrunoff",                              "ocean_month","all",.true.,"none",2
+"ocean_model","frunoff","frunoff",                              "ocean_month","all",.true.,"none",2
+"ocean_model","lprec","lprec",                                  "ocean_month","all",.true.,"none",2
+"ocean_model","fprec","fprec",                                  "ocean_month","all",.true.,"none",2
+"ocean_model","vprec","vprec",                                  "ocean_month","all",.true.,"none",2
+"ocean_model","evap","evap",                                    "ocean_month","all",.true.,"none",2
+"ocean_model","net_heat_coupler","net_heat_coupler",            "ocean_month","all",.true.,"none",2
+"ocean_model","net_heat_surface","net_heat_surface",            "ocean_month","all",.true.,"none",2
+"ocean_model","SW","SW",                                        "ocean_month","all",.true.,"none",2
+"ocean_model","LW","LW",                                        "ocean_month","all",.true.,"none",2
+"ocean_model","LwLatSens","LwLatSens",                          "ocean_month","all",.true.,"none",2
+"ocean_model","salt_flux","salt_flux",                          "ocean_month","all",.true.,"none",2
+"ocean_model","Heat_PmE","Heat_PmE",                            "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_cond","heat_content_cond",          "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_lprec","heat_content_lprec",        "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_fprec","heat_content_fprec",        "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_vprec","heat_content_vprec",        "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_lrunoff","heat_content_lrunoff",    "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_frunoff","heat_content_frunoff",    "ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_surfwater","heat_content_surfwater","ocean_month","all",.true.,"none",2
+"ocean_model","heat_content_massout","heat_content_massout",    "ocean_month","all",.true.,"none",2
+"ocean_model","frazil","frazil",                                "ocean_month","all",.true.,"none",2
 
+#
 # Static ocean fields:
 #=====================
 "ocean_model", "geolon",      "geolon",      "ocean_static", "all", .false., "none", 2

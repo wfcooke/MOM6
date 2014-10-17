@@ -157,9 +157,6 @@ ADJUST_THICKNESS = True         !   [Boolean] default = False
                                 ! would indicate.
 
 ! === module MOM_MEKE ===
-CDRAG = 0.0                     !   [nondim] default = 0.003
-                                ! CDRAG is the drag coefficient relating the magnitude of
-                                ! the velocity field to the bottom stress.
 
 ! === module MOM_lateral_mixing_coeffs ===
 UPWIND_1ST_CONTINUITY = True    !   [Boolean] default = False
@@ -234,6 +231,10 @@ MAXVEL = 6.0                    !   [m s-1] default = 3.0E+08
 ! === module MOM_PointAccel ===
 
 ! === module MOM_set_visc ===
+CDRAG = 0.0                     !   [nondim] default = 0.003
+                                ! CDRAG is the drag coefficient relating the magnitude of
+                                ! the velocity field to the bottom stress. CDRAG is only
+                                ! used if BOTTOMDRAGLAW is defined.
 DRAG_BG_VEL = 0.1               !   [m s-1] default = 0.0
                                 ! DRAG_BG_VEL is either the assumed bottom velocity (with
                                 ! LINEAR_DRAG) or an unresolved  velocity that is
@@ -247,6 +248,8 @@ BBL_THICK_MIN = 0.1             !   [m] default = 0.0
                                 ! near-bottom viscosity.
 
 ! === module MOM_thickness_diffuse ===
+
+! === module MOM_mixed_layer_restrat ===
 Z_OUTPUT_GRID_FILE = "../zgrid.nc" ! default = ""
                                 ! The file that specifies the vertical grid for
                                 ! depth-space diagnostics, or blank to disable
@@ -363,6 +366,8 @@ WIND_CONFIG = "data_override"   !
                                 ! The character string that indicates how wind forcing
                                 ! is specified. Valid options include (file), (2gyre),
                                 ! (1gyre), (gyres), (zero), and (USER).
+LATENT_HEAT_VAPORIZATION = 2.4663E+06 !   [J/kg] default = 2.5E+06
+                                ! The latent heat of fusion.
 READ_GUST_2D = True             !   [Boolean] default = False
                                 ! If true, use a 2-dimensional gustiness supplied from
                                 ! an input file

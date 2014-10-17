@@ -31,7 +31,8 @@ module MOM_lateral_mixing_coeffs
 use MOM_error_handler, only : MOM_error, FATAL, WARNING, MOM_mesg
 use MOM_diag_mediator, only : register_diag_field, safe_alloc_ptr, post_data
 use MOM_diag_mediator, only : diag_ctrl, time_type, query_averaging_enabled
-use MOM_domains, only : pass_var, pass_vector, CGRID_NE, To_All, Scalar_Pair
+use MOM_domains,       only : create_group_pass, do_group_pass
+use MOM_domains,       only : group_pass_type
 use MOM_file_parser, only : get_param, log_version, param_file_type
 use MOM_interface_heights, only : find_eta
 use MOM_grid, only : ocean_grid_type
@@ -50,6 +51,11 @@ type, public :: VarMix_CS ;
                                   ! when the deformation radius is well resolved.
   logical :: Resoln_scaled_KhTr   ! If true, scale away the tracer diffusivity
                                   ! when the deformation radius is well resolved.
+  logical :: interpolate_Res_fn   ! If true, interpolate the resolution function
+                                  ! to the velocity points from the thickness
+                                  ! points; otherwise interpolate the wave
+                                  ! speed and calculate the resolution function
+                                  ! independently at each point.   
   real, dimension(:,:), pointer :: &
     SN_u => NULL(), &   ! S*N at u-points (s^-1)
     SN_v => NULL(), &  ! S*N at v-points (s^-1)
@@ -58,15 +64,20 @@ type, public :: VarMix_CS ;
     cg1 => NULL(), &   ! The first baroclinic gravity wave speed in m s-1.
     Res_fn_h => NULL(), & ! Res_fn_h and Res_fn_q are nondimensional functions
     Res_fn_q => NULL(), & ! of the ratio the first baroclinic deformation
-                          ! radius to the grid spacing at h and q points,
-                          ! respectively. These can be used to scale away
+    Res_fn_u => NULL(), & ! radius to the grid spacing at h and q points,
+    Res_fn_v => NULL(), & ! respectively. These can be used to scale away
                           ! horizontal viscosities or thickness diffusivities
                           ! when the deformation radius is well resolved.
     beta_dx2_h => NULL(), &  ! The magnitude of the gradient of the Coriolis
     beta_dx2_q => NULL(), &  ! parameter times the grid spacing squared at
                              ! h and q points, in m s-1.
+    beta_dx2_u => NULL(), &  ! The magnitude of the gradient of the Coriolis
+    beta_dx2_v => NULL(), &  ! parameter times the grid spacing squared at
+                             ! u and v points, in m s-1.
     f2_dx2_h => NULL(), & ! The Coriolis parameter squared times the grid
     f2_dx2_q => NULL(), & ! spacing squared at h and q points, in m2 s-2.
+    f2_dx2_u => NULL(), & ! The Coriolis parameter squared times the grid
+    f2_dx2_v => NULL(), & ! spacing squared at u and v points, in m2 s-2.
     Rd_dx_h => NULL()     ! Deformation radius over grid spacing (non-dim.)
   ! Parameters
   integer :: VarMix_Ktop  ! Top layer to start downward integrals
@@ -111,7 +122,10 @@ subroutine calc_resoln_function(h, tv, G, CS)
 !  (in)      CS - The control structure returned by a previous call to
 !                 VarMix_init.
 
+  type(group_pass_type), save :: pass_cg1 ! for group halo pass
   real :: cg1_q  ! The gravity wave speed interpolated to q points, in m s-1.
+  real :: cg1_u  ! The gravity wave speed interpolated to u points, in m s-1.
+  real :: cg1_v  ! The gravity wave speed interpolated to v points, in m s-1.
   real :: dx_term
   integer :: mod_power_2, power_2
   integer :: is, ie, js, je, Isq, Ieq, Jsq, Jeq, nz
@@ -129,25 +143,38 @@ subroutine calc_resoln_function(h, tv, G, CS)
     "calc_resoln_function: %Res_fn_h is not associated with Resoln_scaled_Kh.")
   if (.not. ASSOCIATED(CS%Res_fn_q)) call MOM_error(FATAL, &
     "calc_resoln_function: %Res_fn_q is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%Res_fn_u)) call MOM_error(FATAL, &
+    "calc_resoln_function: %Res_fn_u is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%Res_fn_v)) call MOM_error(FATAL, &
+    "calc_resoln_function: %Res_fn_v is not associated with Resoln_scaled_Kh.")
   if (.not. ASSOCIATED(CS%f2_dx2_h)) call MOM_error(FATAL, &
     "calc_resoln_function: %f2_dx2_h is not associated with Resoln_scaled_Kh.")
-  if (.not. ASSOCIATED(CS%beta_dx2_h)) call MOM_error(FATAL, &
-    "calc_resoln_function: %beta_dx2_h is not associated with Resoln_scaled_Kh.")
   if (.not. ASSOCIATED(CS%f2_dx2_q)) call MOM_error(FATAL, &
     "calc_resoln_function: %f2_dx2_q is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%f2_dx2_u)) call MOM_error(FATAL, &
+    "calc_resoln_function: %f2_dx2_u is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%f2_dx2_v)) call MOM_error(FATAL, &
+    "calc_resoln_function: %f2_dx2_v is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%beta_dx2_h)) call MOM_error(FATAL, &
+    "calc_resoln_function: %beta_dx2_h is not associated with Resoln_scaled_Kh.")
   if (.not. ASSOCIATED(CS%beta_dx2_q)) call MOM_error(FATAL, &
     "calc_resoln_function: %beta_dx2_q is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%beta_dx2_u)) call MOM_error(FATAL, &
+    "calc_resoln_function: %beta_dx2_u is not associated with Resoln_scaled_Kh.")
+  if (.not. ASSOCIATED(CS%beta_dx2_v)) call MOM_error(FATAL, &
+    "calc_resoln_function: %beta_dx2_v is not associated with Resoln_scaled_Kh.")
 
   call wave_speed(h, tv, G, CS%cg1, CS%wave_speed_CSp)
 
-  call pass_var(CS%cg1, G%Domain)
+  call create_group_pass(pass_cg1, CS%cg1, G%Domain)
+  call do_group_pass(pass_cg1, G%Domain)
 
   !   Do this calculation on the extent used in MOM_hor_visc.F90, and
   ! MOM_tracer.F90 so that no halo update is needed.
   mod_power_2 = mod(CS%Res_fn_power, 2)
 
 !$OMP parallel default(none) shared(is,ie,js,je,Ieq,Jeq,CS,mod_power_2) &
-!$OMP                       private(dx_term,cg1_q,power_2)
+!$OMP                       private(dx_term,cg1_q,power_2,cg1_u,cg1_v)
   if (CS%Res_fn_power >= 100) then
 !$OMP do
     do j=js-1,je+1 ; do i=is-1,ie+1
@@ -169,6 +196,27 @@ subroutine calc_resoln_function(h, tv, G, CS)
         CS%Res_fn_q(I,J) = 1.0
       endif
     enddo ; enddo
+    if (.not.CS%interpolate_Res_fn) then
+      do j=js,je ; do I=is-1,Ieq
+        cg1_u = 0.5 * (CS%cg1(i,j) + CS%cg1(i+1,j))
+        dx_term = CS%f2_dx2_u(I,j) + cg1_u * CS%beta_dx2_u(I,j)
+        if ((CS%Res_coef * cg1_u)**2 > dx_term) then
+          CS%Res_fn_u(I,j) = 0.0
+        else
+          CS%Res_fn_u(I,j) = 1.0
+        endif
+      enddo ; enddo
+
+      do J=js-1,Jeq ; do i=is,ie
+        cg1_v = 0.5 * (CS%cg1(i,j) + CS%cg1(i,j+1))
+        dx_term = CS%f2_dx2_v(i,J) + cg1_v * CS%beta_dx2_v(i,J)
+        if ((CS%Res_coef * cg1_v)**2 > dx_term) then
+          CS%Res_fn_v(i,J) = 0.0
+        else
+          CS%Res_fn_v(i,J) = 1.0
+        endif
+      enddo ; enddo
+    endif
   elseif (CS%Res_fn_power == 2) then
 !$OMP do
     do j=js-1,je+1 ; do i=is-1,ie+1
@@ -182,6 +230,21 @@ subroutine calc_resoln_function(h, tv, G, CS)
       dx_term = CS%f2_dx2_q(I,J) +  cg1_q * CS%beta_dx2_q(I,J)
       CS%Res_fn_q(I,J) = dx_term / (dx_term + (CS%Res_coef * cg1_q)**2)
     enddo ; enddo
+    if (.not.CS%interpolate_Res_fn) then
+      do j=js,je ; do I=is-1,Ieq
+        cg1_u = 0.5 * (CS%cg1(i,j) + CS%cg1(i+1,j))
+        dx_term = CS%f2_dx2_u(I,j) + cg1_u * CS%beta_dx2_u(I,j)
+
+        CS%Res_fn_u(I,j) = dx_term / (dx_term + (CS%Res_coef * cg1_u)**2)
+      enddo ; enddo
+
+      do J=js-1,Jeq ; do i=is,ie
+        cg1_v = 0.5 * (CS%cg1(i,j) + CS%cg1(i,j+1))
+        dx_term = CS%f2_dx2_v(i,J) + cg1_v * CS%beta_dx2_v(i,J)
+
+        CS%Res_fn_v(i,J) = dx_term / (dx_term + (CS%Res_coef * cg1_v)**2)
+      enddo ; enddo
+    endif
   elseif (mod_power_2 == 0) then
     power_2 = CS%Res_fn_power / 2
 !$OMP do
@@ -198,6 +261,23 @@ subroutine calc_resoln_function(h, tv, G, CS)
       CS%Res_fn_q(I,J) = dx_term / &
           (dx_term + (CS%Res_coef * cg1_q)**CS%Res_fn_power)
     enddo ; enddo
+    if (.not.CS%interpolate_Res_fn) then
+      do j=js,je ; do I=is-1,Ieq
+        cg1_u = 0.5 * (CS%cg1(i,j) + CS%cg1(i+1,j))
+        dx_term = (CS%f2_dx2_u(I,j) + cg1_u * CS%beta_dx2_u(I,j))**power_2
+
+        CS%Res_fn_u(I,j) = dx_term / &
+            (dx_term + (CS%Res_coef * cg1_u)**CS%Res_fn_power)
+      enddo ; enddo
+
+      do J=js-1,Jeq ; do i=is,ie
+        cg1_v = 0.5 * (CS%cg1(i,j) + CS%cg1(i,j+1))
+        dx_term = (CS%f2_dx2_v(i,J) + cg1_v * CS%beta_dx2_v(i,J))**power_2
+
+        CS%Res_fn_v(i,J) = dx_term / &
+            (dx_term + (CS%Res_coef * cg1_v)**CS%Res_fn_power)
+      enddo ; enddo
+    endif
   else
 !$OMP do
     do j=js-1,je+1 ; do i=is-1,ie+1
@@ -215,6 +295,32 @@ subroutine calc_resoln_function(h, tv, G, CS)
                       cg1_q * CS%beta_dx2_q(I,J)))**CS%Res_fn_power
       CS%Res_fn_q(I,J) = dx_term / &
           (dx_term + (CS%Res_coef * cg1_q)**CS%Res_fn_power)
+    enddo ; enddo
+    if (.not.CS%interpolate_Res_fn) then
+      do j=js,je ; do I=is-1,Ieq
+        cg1_u = 0.5 * (CS%cg1(i,j) + CS%cg1(i+1,j))
+        dx_term = (sqrt(CS%f2_dx2_u(I,j) + &
+                        cg1_u * CS%beta_dx2_u(I,j)))**CS%Res_fn_power
+        CS%Res_fn_u(I,j) = dx_term / &
+            (dx_term + (CS%Res_coef * cg1_u)**CS%Res_fn_power)
+      enddo ; enddo
+
+      do J=js-1,Jeq ; do i=is,ie
+        cg1_v = 0.5 * (CS%cg1(i,j) + CS%cg1(i,j+1))
+        dx_term = (sqrt(CS%f2_dx2_v(i,J) + &
+                        cg1_v * CS%beta_dx2_v(i,J)))**CS%Res_fn_power
+        CS%Res_fn_v(i,J) = dx_term / &
+            (dx_term + (CS%Res_coef * cg1_v)**CS%Res_fn_power)
+      enddo ; enddo
+    endif
+  endif
+
+  if (CS%interpolate_Res_fn) then
+    do j=js,je ; do I=is-1,Ieq
+      CS%Res_fn_u(I,j) = 0.5*(CS%Res_fn_h(i,j) + CS%Res_fn_h(i+1,j))
+    enddo ; enddo
+    do J=js-1,Jeq ; do i=is,ie
+      CS%Res_fn_v(i,J) = 0.5*(CS%Res_fn_h(i,j) + CS%Res_fn_h(i,j+1))
     enddo ; enddo
   endif
 
@@ -417,11 +523,11 @@ subroutine VarMix_init(Time, G, param_file, diag, CS)
 !  (in)      diag - A structure that is used to regulate diagnostic output.
 !  (in/out)  CS - A pointer that is set to point to the control structure
 !                 for this module
-  real :: KhTr_Slope_Cff, KhTh_Slope_Cff
+  real :: KhTr_Slope_Cff, KhTh_Slope_Cff, oneOrTwo
   real, parameter :: absurdly_small_freq2 = 1e-34  ! A miniscule frequency
              ! squared that is used to avoid division by 0, in s-2.  This
              ! value is roughly (pi / (the age of the universe) )^2.
-  logical :: use_variable_mixing
+  logical :: use_variable_mixing, Gill_equatorial_Ld
   logical :: Resoln_scaled_Kh, Resoln_scaled_KhTh, Resoln_scaled_KhTr
 ! This include declares and sets the variable "version".
 #include "version_variable.h"
@@ -518,13 +624,18 @@ subroutine VarMix_init(Time, G, param_file, diag, CS)
     ! Allocate and initialize various arrays.
     allocate(CS%Res_fn_h(isd:ied,jsd:jed))       ; CS%Res_fn_h(:,:) = 0.0
     allocate(CS%Res_fn_q(IsdB:IedB,JsdB:JedB))   ; CS%Res_fn_q(:,:) = 0.0
+    allocate(CS%Res_fn_u(IsdB:IedB,jsd:jed))     ; CS%Res_fn_u(:,:) = 0.0
+    allocate(CS%Res_fn_v(isd:ied,JsdB:JedB))     ; CS%Res_fn_v(:,:) = 0.0
     allocate(CS%cg1(isd:ied,jsd:jed))            ; CS%cg1(:,:) = 0.0
     allocate(CS%beta_dx2_h(isd:ied,jsd:jed))     ; CS%beta_dx2_h(:,:) = 0.0
     allocate(CS%beta_dx2_q(IsdB:IedB,JsdB:JedB)) ; CS%beta_dx2_q(:,:) = 0.0
+    allocate(CS%beta_dx2_u(IsdB:IedB,jsd:jed))   ; CS%beta_dx2_u(:,:) = 0.0
+    allocate(CS%beta_dx2_v(isd:ied,JsdB:JedB))   ; CS%beta_dx2_v(:,:) = 0.0
     allocate(CS%f2_dx2_h(isd:ied,jsd:jed))       ; CS%f2_dx2_h(:,:) = 0.0
     allocate(CS%f2_dx2_q(IsdB:IedB,JsdB:JedB))   ; CS%f2_dx2_q(:,:) = 0.0
+    allocate(CS%f2_dx2_u(IsdB:IedB,jsd:jed))     ; CS%f2_dx2_u(:,:) = 0.0
+    allocate(CS%f2_dx2_v(isd:ied,JsdB:JedB))     ; CS%f2_dx2_v(:,:) = 0.0
     allocate(CS%Rd_dx_h(isd:ied,jsd:jed))        ; CS%Rd_dx_h(:,:) = 0.0
-
 
     CS%id_Res_fn = register_diag_field('ocean_model', 'Res_fn', diag%axesT1, Time, &
        'Resolution function for scaling diffusivities', 'Nondim')
@@ -542,14 +653,28 @@ subroutine VarMix_init(Time, G, param_file, diag, CS)
                  "are more efficient to calculate.  Setting this greater \n"//&
                  "than 100 results in a step-function being used.", &
                  units="nondim", default=2)
+    call get_param(param_file, mod, "INTERPOLATE_RES_FN", CS%interpolate_Res_fn, &
+                 "If true, interpolate the resolution function to the \n"//&
+                 "velocity points from the thickness points; otherwise \n"//&
+                 "interpolate the wave speed and calculate the resolution \n"//&
+                 "function independently at each point.", default=.true.)
+    call get_param(param_file, mod, "GILL_EQUATORIAL_LD", Gill_equatorial_Ld, &
+                 "If true, uses Gill's definition of the baroclinic\n"//&
+                 "equatorial deformation radius, otherwise, if false, use\n"//&
+                 "Pedlosky's definition. These definitions differ by a factor\n"//&
+                 "of 2 infront of the beta term in the denominator. Gill's"//&
+                 "is the more appropriate definition.\n", default=.false.)
 
     ! Pre-calculate several static expressions for later use.
+    if (Gill_equatorial_Ld) then; oneOrTwo = 2.0
+      else; oneOrTwo = 1.0; endif
+
     do j=js-1,je+1 ; do i=is-1,ie+1
       CS%f2_dx2_h(i,j) = (G%dxT(i,j)**2 + G%dyT(i,j)**2) * &
           max(0.25 * ((G%CoriolisBu(I,J)**2 + G%CoriolisBu(I-1,J-1)**2) + &
                       (G%CoriolisBu(I-1,J)**2 + G%CoriolisBu(I,J-1)**2)), &
               absurdly_small_freq2)
-      CS%beta_dx2_h(i,j) = (G%dxT(i,j)**2 + G%dyT(i,j)**2) * (sqrt(0.5 * &
+      CS%beta_dx2_h(i,j) = oneOrTwo * (G%dxT(i,j)**2 + G%dyT(i,j)**2) * (sqrt(0.5 * &
           ( (((G%CoriolisBu(I,J)-G%CoriolisBu(I-1,J)) * G%IdxCv(i,J))**2 + &
              ((G%CoriolisBu(I,J-1)-G%CoriolisBu(I-1,J-1)) * G%IdxCv(i,J-1))**2) + &
             (((G%CoriolisBu(I,J)-G%CoriolisBu(I,J-1)) * G%IdyCu(I,j))**2 + &
@@ -557,13 +682,35 @@ subroutine VarMix_init(Time, G, param_file, diag, CS)
     enddo ; enddo
 
     do J=js-1,Jeq ; do I=is-1,Ieq
-      CS%f2_dx2_q(I,J) = (G%dxBu(i,j)**2 + G%dyBu(i,j)**2) * &
+      CS%f2_dx2_q(I,J) = (G%dxBu(I,J)**2 + G%dyBu(I,J)**2) * &
                          max(G%CoriolisBu(I,J)**2, absurdly_small_freq2)
-      CS%beta_dx2_q(I,J) = (G%dxBu(i,j)**2 + G%dyBu(i,j)**2) * (sqrt(0.5 * &
+      CS%beta_dx2_q(I,J) = oneOrTwo * (G%dxBu(I,J)**2 + G%dyBu(I,J)**2) * (sqrt(0.5 * &
           ( (((G%CoriolisBu(I,J)-G%CoriolisBu(I-1,J)) * G%IdxCv(i,J))**2 + &
              ((G%CoriolisBu(I+1,J)-G%CoriolisBu(I,J)) * G%IdxCv(i+1,J))**2) + &
             (((G%CoriolisBu(I,J)-G%CoriolisBu(I,J-1)) * G%IdyCu(I,j))**2 + &
              ((G%CoriolisBu(I,J+1)-G%CoriolisBu(I,J)) * G%IdyCu(I,j+1))**2) ) ))
+    enddo ; enddo
+
+    do j=js,je ; do I=is-1,Ieq
+      CS%f2_dx2_u(I,j) = (G%dxCu(I,j)**2 + G%dyCu(I,j)**2) * &
+          max(0.5*(G%CoriolisBu(I,J)**2+G%CoriolisBu(I,J-1)**2), absurdly_small_freq2)
+      CS%beta_dx2_u(I,j) = oneOrTwo * (G%dxCu(I,j)**2 + G%dyCu(I,j)**2) * (sqrt( &
+          0.25*( (((G%CoriolisBu(I,J-1)-G%CoriolisBu(I-1,J-1)) * G%IdxCv(i,J-1))**2 + &
+                  ((G%CoriolisBu(I+1,J)-G%CoriolisBu(I,J)) * G%IdxCv(i+1,J))**2) + &
+                 (((G%CoriolisBu(I+1,J-1)-G%CoriolisBu(I,J-1)) * G%IdxCv(i+1,J-1))**2 + &
+                  ((G%CoriolisBu(I,J)-G%CoriolisBu(I-1,J)) * G%IdxCv(i,J))**2) ) + &
+                  ((G%CoriolisBu(I,J)-G%CoriolisBu(I,J-1)) * G%IdyCu(I,j))**2 ))
+    enddo ; enddo
+
+    do J=js-1,Jeq ; do i=is,ie
+      CS%f2_dx2_v(i,J) = (G%dxCv(i,J)**2 + G%dyCv(i,J)**2) * &
+          max(0.5*(G%CoriolisBu(I,J)**2+G%CoriolisBu(I-1,J)**2), absurdly_small_freq2)
+      CS%beta_dx2_v(i,J) = oneOrTwo * (G%dxCv(i,J)**2 + G%dyCv(i,J)**2) * (sqrt( &
+          ((G%CoriolisBu(I,J)-G%CoriolisBu(I-1,J)) * G%IdxCv(i,J))**2 + &
+          0.25*( (((G%CoriolisBu(I,J)-G%CoriolisBu(I,J-1)) * G%IdyCu(I,j))**2 + &
+                  ((G%CoriolisBu(I-1,J+1)-G%CoriolisBu(I-1,J)) * G%IdyCu(I-1,j+1))**2) + &
+                 (((G%CoriolisBu(I,J+1)-G%CoriolisBu(I,J)) * G%IdyCu(I,j+1))**2 + &
+                  ((G%CoriolisBu(I-1,J)-G%CoriolisBu(I-1,J-1)) * G%IdyCu(I-1,j))**2) ) ))
     enddo ; enddo
 
   endif
