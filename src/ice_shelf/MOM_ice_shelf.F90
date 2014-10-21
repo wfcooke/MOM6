@@ -311,7 +311,8 @@ type, public :: ice_shelf_CS ; private
                                   !       used, the southwest nodes of the southwest tiles will not
                                   !       be included in the 
 
-
+  logical :: update_shelf_mass_from_melt 
+  real :: min_shelf_thickness = 1.0 
   logical :: switch_var ! for debdugging - a switch to ensure some event happens only once
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -457,7 +458,7 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
   ! Variables used in iterating for wB_flux.
   real :: wB_flux_new, DwB, dDwB_dwB_in
   real :: I_Gam_T, I_Gam_S, dG_dwB, iDens
-  real :: u_at_h, v_at_h, Isqrt2
+  real :: u_at_h, v_at_h, Isqrt2, fraz
   logical :: Sb_min_set, Sb_max_set
   character(4) :: stepnum
   character(2) :: procnum
@@ -507,7 +508,7 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
       ! DNG - to allow this everywhere Hml>0.0 allows for melting under grounded cells
       !       propose instead to allow where Hml > [some threshold]
 
-      if ((iDens*state%ocean_mass(i,j) > CS%col_thick_melt_threshold) .and. (CS%area_shelf_h(i,j) > 0.0) .and. &
+      if ((iDens*state%ocean_mass(i,j) > CS%col_thick_melt_threshold*CS%density_ice) .and. (CS%area_shelf_h(i,j) > 0.0) .and. &
           (CS%isthermo) .and. (state%Hml(i,j) > 0.0) ) then
 
         if (CS%threeeq) then
@@ -692,6 +693,25 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
     call cpu_clock_end(id_clock_pass)
   endif
   
+
+  if (CS%update_shelf_mass_from_melt) then
+     do j=js,je
+        do i=is,ie
+           if (CS%mass_shelf(i,j) .gt. 0.0) then
+              CS%mass_shelf(i,j) = CS%mass_shelf(i,j) - CS%lprec(i,j)*CS%time_step*CS%flux_factor
+              fraz = state%frazil(i,j)/CS%Lat_fusion
+              CS%mass_shelf(i,j) = CS%mass_shelf(i,j) + fraz
+              CS%mass_shelf(i,j) = max(CS%mass_shelf(i,j), CS%min_shelf_thickness*CS%density_ice)
+              CS%mass_shelf(i,j) = min(CS%mass_shelf(i,j), (G%bathyT(i,j)-1.0)*CS%density_ice*CS%density_ice/CS%density_ocean_avg)           
+              CS%h_shelf(i,j) =  CS%mass_shelf(i,j) / CS%density_ice
+           endif
+        enddo
+     enddo
+     call pass_var(CS%mass_shelf, G%domain)
+     call pass_var(CS%h_shelf, G%domain)
+
+  endif
+     
   call add_shelf_flux(G, CS, state, fluxes)
 
   ! now the thermodynamic data is passed on... time to update the ice dynamic quantities
@@ -808,7 +828,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
         fluxes%frac_shelf_v(i,J) = ((CS%area_shelf_h(i,j) + CS%area_shelf_h(i,j+1)) / &
                                     (G%areaT(i,j) + G%areaT(i,j+1)))
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
-                                    max(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
+                                    min(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
     call pass_vector(fluxes%frac_shelf_u, fluxes%frac_shelf_v, G%domain, TO_ALL, CGRID_NE)
   else
@@ -821,7 +841,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   
     do j=jsd,jed-1 ; do i=isd,ied ! changed stride
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
-                    max(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
+                    min(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
   endif
 
@@ -907,7 +927,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   ! If the shelf mass is changing, the fluxes%rigidity_ice_[uv] needs to be
   ! updated here.
   
-  if (CS%shelf_mass_is_dynamic) then
+  if (CS%shelf_mass_is_dynamic .or. CS%update_shelf_mass_from_melt) then
     do j=G%jsc,G%jec ; do i=G%isc-1,G%iec
       fluxes%rigidity_ice_u(I,j) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
@@ -1136,6 +1156,10 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
   call get_param(param_file, mod, "DYNAMIC_SHELF_MASS", CS%shelf_mass_is_dynamic, &
                  "If true, the ice sheet mass can evolve with time.", &
                  default=.false.)
+  call get_param(param_file, mod, "UPDATE_SHELF_MASS_FROM_MELT", CS%update_shelf_mass_from_melt, &
+                 "If true, the ice sheet mass can evolve with time due to ice-ocean thermodynamics.", &
+                 default=.false.)
+
   if (CS%shelf_mass_is_dynamic) then
     call get_param(param_file, mod, "OVERRIDE_SHELF_MOVEMENT", CS%override_shelf_movement, &
                  "If true, user provided code specifies the ice-shelf \n"//&
