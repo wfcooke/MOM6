@@ -168,6 +168,7 @@ program MOM_main
   !-----------------------------------------------------------------------
 
   integer :: get_cpu_affinity, base_cpu, omp_get_num_threads, omp_get_thread_num
+  real :: rdaymax
 
   character(len=4), parameter :: vers_num = 'v2.0'
 ! This include declares and sets the variable "version".
@@ -298,19 +299,21 @@ program MOM_main
   if (years+months+days+hours+minutes+seconds > 0) then
     Time_end = increment_date(Time, years, months, days, hours, minutes, seconds)
     call MOM_mesg('Segment run length determined from ocean_solo_nml.', 2)
-    call get_param(param_file, mod, "DAYMAX", daymax, &
+    call get_param(param_file, mod, "DAYMAX", rdaymax, &
                  "The final time of the whole simulation, in units of \n"//&
                  "TIMEUNIT seconds.  This also sets the potential end \n"//&
                  "time of the present run segment if the end time is \n"//&
                  "not set (as it was here) via ocean_solo_nml in input.nml.", &
-                 timeunit=Time_unit, default=Time_end)
+                 units="s", default=86400.)
+
   else
-    call get_param(param_file, mod, "DAYMAX", daymax, &
+    call get_param(param_file, mod, "DAYMAX", rdaymax, &
                  "The final time of the whole simulation, in units of \n"//&
                  "TIMEUNIT seconds.  This also sets the potential end \n"//&
                  "time of the present run segment if the end time is \n"//&
                  "not set via ocean_solo_nml in input.nml.", &
-                 timeunit=Time_unit, fail_if_missing=.true.)
+                 units="s", default=86400.,fail_if_missing=.true.)
+    daymax = increment_date(Time,0,0,int(rdaymax),0,0,0)
     Time_end = daymax
   endif
 

@@ -364,6 +364,7 @@ subroutine buoyancy_forcing_allocate(fluxes, G, CS)
     ! specify surface freshwater forcing by setting the following (kg/(m^2 * s))
     ! with convention that positive values for water entering ocean.
     call safe_alloc_ptr(fluxes%evap,isd,ied,jsd,jed)
+    call safe_alloc_ptr(fluxes%salt_flux,isd,ied,jsd,jed)
     call safe_alloc_ptr(fluxes%lprec,isd,ied,jsd,jed)
     call safe_alloc_ptr(fluxes%fprec,isd,ied,jsd,jed)
     call safe_alloc_ptr(fluxes%vprec,isd,ied,jsd,jed)

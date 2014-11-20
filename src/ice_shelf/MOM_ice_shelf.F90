@@ -843,6 +843,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
                     min(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
+    call pass_vector(fluxes%rigidity_ice_u, fluxes%rigidity_ice_v, G%domain, TO_ALL, CGRID_NE)
   endif
 
   if (CS%debug) then
@@ -866,7 +867,9 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   if (.NOT.ASSOCIATED(state%frazil)) then
     call MOM_error (FATAL, "FRAZIL NEEDS TO BE TURNED ON FOR THE ICE SHELF MODEL. ")
   endif
-
+! mjh testing
+  call pass_vector(fluxes%frac_shelf_u, fluxes%frac_shelf_v, G%domain, TO_ALL, CGRID_NE)
+! end testing
   do j=G%jsc,G%jec ; do i=G%isc,G%iec
     frac_area = fluxes%frac_shelf_h(i,j)
     if (frac_area > 0.0) then
@@ -900,7 +903,10 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
       ! form of surface layer evaporation (kg m-2 s-1). Update lprec in the
       ! control structure for diagnostic purposes.
 
-      fraz= state%frazil(i,j) / CS%time_step / CS%Lat_fusion
+      fraz=0.
+      if (associated(state%frazil)) then
+      	 fraz= state%frazil(i,j) / CS%time_step / CS%Lat_fusion
+      endif
       fluxes%evap(i,j) = fluxes%evap(i,j) - fraz
       CS%lprec(i,j)=CS%lprec(i,j) - fraz  
 
@@ -937,6 +943,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
+    call pass_vector(fluxes%rigidity_ice_u, fluxes%rigidity_ice_v, G%domain, TO_ALL, CGRID_NE)
   endif
 end subroutine add_shelf_flux
 
@@ -1222,7 +1229,7 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
 !  call get_param(param_file, mod, "LENLAT", CS%len_lat, &
 !                 "The latitudinal or y-direction length of the domain.", &
 !                 units="axis_units", fail_if_missing=.true.)
-  call get_param(param_file, mod, "DT_FORCING", CS%time_step, &
+  call get_param(param_file, mod, "DT_THERM", CS%time_step, &
                  "The time step for changing forcing, coupling with other \n"//&
                  "components, or potentially writing certain diagnostics. \n"//&
                  "The default value is given by DT.", units="s", default=0.0)

@@ -1228,7 +1228,7 @@ subroutine set_viscous_ML(u, v, h, tv, fluxes, visc, dt, G, CS)
         visc%tbl_thick_shelf_u(I,j) = max(CS%Htbl_shelf_min, &
             htot(I) / (0.5 + sqrt(0.25 + &
                          (htot(i)*(G%CoriolisBu(I,J-1)+G%CoriolisBu(I,J)))**2 / &
-                         (ustar(i)*G%m_to_H)**2 )) )
+                         (max(ustar(i),CS%ustar_min)*G%m_to_H)**2 )) )
         visc%kv_tbl_shelf_u(I,j) = max(CS%KV_TBL_min, &
                        cdrag_sqrt*ustar(I)*visc%tbl_thick_shelf_u(I,j))
       endif ; enddo ! I-loop
@@ -1463,7 +1463,7 @@ subroutine set_viscous_ML(u, v, h, tv, fluxes, visc, dt, G, CS)
         visc%tbl_thick_shelf_v(i,J) = max(CS%Htbl_shelf_min, &
             htot(i) / (0.5 + sqrt(0.25 + &
                 (htot(i)*(G%CoriolisBu(I-1,J)+G%CoriolisBu(I,J)))**2 / &
-                (ustar(i)*G%m_to_H)**2 )) )
+                (max(ustar(i),CS%ustar_min)*G%m_to_H)**2 )) )
         visc%kv_tbl_shelf_v(i,J) = max(CS%KV_TBL_min, &
                        cdrag_sqrt*ustar(i)*visc%tbl_thick_shelf_v(i,J))
       endif ; enddo ! i-loop
