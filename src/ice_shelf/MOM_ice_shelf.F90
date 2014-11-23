@@ -867,9 +867,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   if (.NOT.ASSOCIATED(state%frazil)) then
     call MOM_error (FATAL, "FRAZIL NEEDS TO BE TURNED ON FOR THE ICE SHELF MODEL. ")
   endif
-! mjh testing
-  call pass_vector(fluxes%frac_shelf_u, fluxes%frac_shelf_v, G%domain, TO_ALL, CGRID_NE)
-! end testing
+
   do j=G%jsc,G%jec ; do i=G%isc,G%iec
     frac_area = fluxes%frac_shelf_h(i,j)
     if (frac_area > 0.0) then
@@ -934,12 +932,12 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   ! updated here.
   
   if (CS%shelf_mass_is_dynamic .or. CS%update_shelf_mass_from_melt) then
-    do j=G%jsc,G%jec ; do i=G%isc-1,G%iec
+    do j=G%jsd,G%jed ; do i=G%isd,G%ied-1
       fluxes%rigidity_ice_u(I,j) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
     enddo ; enddo
 
-    do j=G%jsc-1,G%jec ; do i=G%isc,G%iec
+    do j=G%jsd,G%jed-1 ; do i=G%isd,G%ied
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
@@ -1515,7 +1513,10 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
 
     ! This model is initialized internally or from a file.
     call initialize_ice_thickness (CS%h_shelf, CS%area_shelf_h, CS%hmask, G, param_file)
-
+    call pass_var (CS%h_shelf,G%domain)
+    call pass_var (CS%area_shelf_h,G%domain)
+    call pass_var (CS%hmask,G%domain)
+    
     ! next make sure mass is consistent with thickness
     do j=G%jsd,G%jed
       do i=G%isd,G%ied
@@ -1626,7 +1627,7 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
     enddo ; enddo
   endif
   
-  write (procnum,'(I2)') mpp_pe()
+!  write (procnum,'(I2)') mpp_pe()
   if (.not. solo_mode) then
   call pass_vector(fluxes%frac_shelf_u, fluxes%frac_shelf_v, G%domain, TO_ALL, CGRID_NE)
   endif
@@ -2147,7 +2148,7 @@ subroutine ice_shelf_solve_outer (CS, u, v, FE, iters, time)
   if (CS%GL_regularize) then
 
     call interpolate_H_to_B (CS, CS%h_shelf, CS%hmask, H_node)
-    call savearray2 ("H_node",H_node,CS%write_output_to_file)
+!    call savearray2 ("H_node",H_node,CS%write_output_to_file)
 
     do j=G%jsc,G%jec
       do i=G%isc,G%iec
@@ -2167,13 +2168,13 @@ subroutine ice_shelf_solve_outer (CS, u, v, FE, iters, time)
         endif
       enddo
     enddo   
-    call savearray2 ("float_cond",float_cond,CS%write_output_to_file)
+!    call savearray2 ("float_cond",float_cond,CS%write_output_to_file)
 
     call pass_var (float_cond, G%Domain)
 
     call bilinear_shape_functions_subgrid (Phisub, nsub)
 
-    call savearray2("Phisub1111",Phisub(:,:,1,1,1,1),CS%write_output_to_file)
+!    call savearray2("Phisub1111",Phisub(:,:,1,1,1,1),CS%write_output_to_file)
 
   endif
 
@@ -3613,12 +3614,12 @@ subroutine calc_shelf_driving_stress (CS, TAUD_X, TAUD_Y, OD, FE)
   rho = CS%density_ice
   rhow = CS%density_ocean_avg  
 
-  call savearray2 ("H",H,CS%write_output_to_file)
+!  call savearray2 ("H",H,CS%write_output_to_file)
 !  call savearray2 ("hmask",hmask,CS%write_output_to_file)
-  call savearray2 ("u_face_mask", CS%u_face_mask_boundary,CS%write_output_to_file)
-  call savearray2 ("umask", CS%umask,CS%write_output_to_file)
-  call savearray2 ("v_face_mask", CS%v_face_mask_boundary,CS%write_output_to_file)
-  call savearray2 ("vmask", CS%vmask,CS%write_output_to_file)
+!  call savearray2 ("u_face_mask", CS%u_face_mask_boundary,CS%write_output_to_file)
+!  call savearray2 ("umask", CS%umask,CS%write_output_to_file)
+!  call savearray2 ("v_face_mask", CS%v_face_mask_boundary,CS%write_output_to_file)
+!  call savearray2 ("vmask", CS%vmask,CS%write_output_to_file)
 
 !   if (G%symmetric) then
 !     isym=1
@@ -5748,7 +5749,7 @@ subroutine solo_time_step (CS, time_step, n, Time, min_time_step_in)
 
 
    if (mpp_pe() .eq. 7) then
-      call savearray2 ("hmask",CS%hmask,CS%write_output_to_file)
+!      call savearray2 ("hmask",CS%hmask,CS%write_output_to_file)
 !!! OVS!!!
 !      call savearray2 ("tshelf",CS%t_shelf,CS%write_output_to_file)
    endif
