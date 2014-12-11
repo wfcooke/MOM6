@@ -311,7 +311,8 @@ type, public :: ice_shelf_CS ; private
                                   !       used, the southwest nodes of the southwest tiles will not
                                   !       be included in the 
 
-
+  logical :: update_shelf_mass_from_melt 
+  real :: min_shelf_thickness = 50.0 
   logical :: switch_var ! for debdugging - a switch to ensure some event happens only once
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -457,7 +458,7 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
   ! Variables used in iterating for wB_flux.
   real :: wB_flux_new, DwB, dDwB_dwB_in
   real :: I_Gam_T, I_Gam_S, dG_dwB, iDens
-  real :: u_at_h, v_at_h, Isqrt2
+  real :: u_at_h, v_at_h, Isqrt2, fraz
   logical :: Sb_min_set, Sb_max_set
   character(4) :: stepnum
   character(2) :: procnum
@@ -692,6 +693,25 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
     call cpu_clock_end(id_clock_pass)
   endif
   
+
+  if (CS%update_shelf_mass_from_melt) then
+     do j=js,je
+        do i=is,ie
+           if (CS%mass_shelf(i,j) .gt. 0.0) then
+              CS%mass_shelf(i,j) = CS%mass_shelf(i,j) - CS%lprec(i,j)*CS%time_step*CS%flux_factor
+              fraz = state%frazil(i,j)/CS%Lat_fusion
+              CS%mass_shelf(i,j) = CS%mass_shelf(i,j) + fraz
+              CS%mass_shelf(i,j) = max(CS%mass_shelf(i,j), CS%min_shelf_thickness*CS%density_ice)
+              CS%mass_shelf(i,j) = min(CS%mass_shelf(i,j), (G%bathyT(i,j)-1.0e-12)*CS%density_ice*CS%density_ice/CS%density_ocean_avg)           
+              CS%h_shelf(i,j) =  CS%mass_shelf(i,j) / CS%density_ice
+           endif
+        enddo
+     enddo
+     call pass_var(CS%mass_shelf, G%domain)
+     call pass_var(CS%h_shelf, G%domain)
+
+  endif
+     
   call add_shelf_flux(G, CS, state, fluxes)
 
   ! now the thermodynamic data is passed on... time to update the ice dynamic quantities
@@ -907,7 +927,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   ! If the shelf mass is changing, the fluxes%rigidity_ice_[uv] needs to be
   ! updated here.
   
-  if (CS%shelf_mass_is_dynamic) then
+  if (CS%shelf_mass_is_dynamic .or. CS%update_shelf_mass_from_melt) then
     do j=G%jsc,G%jec ; do i=G%isc-1,G%iec
       fluxes%rigidity_ice_u(I,j) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
@@ -1136,6 +1156,10 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
   call get_param(param_file, mod, "DYNAMIC_SHELF_MASS", CS%shelf_mass_is_dynamic, &
                  "If true, the ice sheet mass can evolve with time.", &
                  default=.false.)
+  call get_param(param_file, mod, "UPDATE_SHELF_MASS_FROM_MELT", CS%update_shelf_mass_from_melt, &
+                 "If true, the ice sheet mass can evolve with time due to ice-ocean thermodynamics.", &
+                 default=.false.)
+
   if (CS%shelf_mass_is_dynamic) then
     call get_param(param_file, mod, "OVERRIDE_SHELF_MOVEMENT", CS%override_shelf_movement, &
                  "If true, user provided code specifies the ice-shelf \n"//&
@@ -1502,6 +1526,20 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
                        G, CS%restart_CSp)
    
 
+    ! next make sure mass is consistent with thickness
+    do j=G%jsd,G%jed
+      do i=G%isd,G%ied
+        CS%hmask(i,j) = 0.0
+        if (CS%mass_shelf(i,j) > 0.0) then
+          CS%h_shelf(i,j) = CS%mass_shelf(i,j)/CS%density_ice
+          if (CS%area_shelf_h(i,j) .ge. G%areaT(i,j)) then
+             CS%hmask(i,j) = 1.0
+          else
+             CS%hmask(i,j) = 2.0
+          endif
+        endif
+      enddo
+    enddo
 
     ! i think this call isnt necessary - all it does is set hmask to 3 at
     ! the dirichlet boundary, and now this is done elsewhere
@@ -1555,8 +1593,11 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
     call pass_var(CS%h_shelf, G%domain)
     call pass_var(CS%mass_shelf, G%domain)
     call cpu_clock_end(id_clock_pass)
+  else
+     call pass_var(CS%h_shelf, G%domain)
+     call pass_var(CS%mass_shelf, G%domain)
+     call pass_var(CS%area_shelf_h, G%domain)
   endif
-    call pass_var(CS%area_shelf_h, G%domain)
 
   do j=jsd,jed ; do i=isd,ied ! changed stride
     if (CS%area_shelf_h(i,j) > G%areaT(i,j)) then
