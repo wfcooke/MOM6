@@ -2125,7 +2125,7 @@ subroutine diagnoseMLDbyDensityDifference(id_MLD, h, tv, densityDiff, G, diagPtr
   real, dimension(SZI_(G)) :: rhoAtK, rho1, d1, pRef_N2 ! Used for N2
   real, dimension(SZI_(G), SZJ_(G)) :: MLD ! Diagnosed mixed layer depth
   real, dimension(SZI_(G), SZJ_(G)) :: subMLN2 ! Diagnosed stratification below ML
-  real, parameter :: dz_subML = 50. ! Depth below ML over which to diagnose stratification (m)
+  real, parameter :: dz_subML = 10. ! Depth below ML over which to diagnose stratification (m)
   integer :: i, j, is, ie, js, je, k, nz, id_N2
   real :: aFac, ddRho
 
