@@ -896,6 +896,8 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
         fluxes%evap(i,j) = frac_area*CS%lprec(i,j)*CS%flux_factor
       endif
 
+      fluxes%ustar(i,j)=MAX(CS%ustar_bg,fluxes%ustar(i,j)*CS%flux_factor)
+
       ! Add frazil formation diagnosed by the ocean model (J m-2) in the
       ! form of surface layer evaporation (kg m-2 s-1). Update lprec in the
       ! control structure for diagnostic purposes.
