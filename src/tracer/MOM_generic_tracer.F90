@@ -342,11 +342,13 @@ contains
         call g_tracer_get_src_info(g_tracer,g_tracer_name,&
                                    src_file, src_var_name, src_var_unit, src_var_gridspec,&
                                    src_var_record,src_var_unit_conversion)
-        !The following call is for debugging and can be removed
-        !call MOM_error(NOTE, "initialize_MOM_Generic_tracer: source information for "//trim(g_tracer_name)//" : "//&
-        !                      trim(src_file)//","//trim(src_var_name)//","//trim(src_var_unit)//","//&
-        !                      trim(src_var_gridspec)) ! src_var_record , src_var_unit_conversion
-
+ 
+        !Regrid 
+        !if(src_file .ne. 'NULL') then 
+        !!Regrid 
+        !endif
+        !Those tracers that have src_file .eq. 'NULL' do not require a source and
+        !should be initialized from their IC_file as before.
        
         if (len_trim(CS%IC_file) > 0) then
           !  Read the tracer concentrations from a netcdf file.
