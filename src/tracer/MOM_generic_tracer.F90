@@ -47,7 +47,7 @@ module MOM_generic_tracer
 
   use g_tracer_utils,   only: g_tracer_get_name,g_tracer_set_values,g_tracer_set_common,g_tracer_get_common
   use g_tracer_utils,   only: g_tracer_get_next,g_tracer_type,g_tracer_is_prog,g_tracer_flux_init
-  use g_tracer_utils,   only: g_tracer_send_diag,g_tracer_get_values
+  use g_tracer_utils,   only: g_tracer_send_diag,g_tracer_get_values, g_tracer_get_src_info
   use g_tracer_utils,   only: g_tracer_get_pointer,g_tracer_get_alias,g_diag_type
 
   use MOM_diag_mediator, only : post_data, register_diag_field, safe_alloc_ptr
@@ -314,6 +314,9 @@ contains
     real, dimension(:,:,:), pointer     :: tr_ptr
     real,    dimension(G%isd:G%ied, G%jsd:G%jed,1:G%ke) :: grid_tmask
     integer, dimension(G%isd:G%ied, G%jsd:G%jed)        :: grid_kmt
+    character(len=fm_string_len) :: src_file, src_var_name, src_var_unit, src_var_gridspec
+    integer                      :: src_var_record
+    real                         :: src_var_unit_conversion
 
     !! 2010/02/04  Add code to re-initialize Generic Tracers if needed during a model simulation
     !! By default, restart cpio should not contain a Generic Tracer IC file and step below will be skipped.
@@ -335,6 +338,16 @@ contains
       if (.not.restart .or. (CS%tracers_may_reinit .and. &
           .not.query_initialized(tr_ptr, g_tracer_name, CS%restart_CSp))) then
 
+        !Get the information about the initialization source for this tracer 
+        call g_tracer_get_src_info(g_tracer,g_tracer_name,&
+                                   src_file, src_var_name, src_var_unit, src_var_gridspec,&
+                                   src_var_record,src_var_unit_conversion)
+        !The following call is for debugging and can be removed
+        !call MOM_error(NOTE, "initialize_MOM_Generic_tracer: source information for "//trim(g_tracer_name)//" : "//&
+        !                      trim(src_file)//","//trim(src_var_name)//","//trim(src_var_unit)//","//&
+        !                      trim(src_var_gridspec)) ! src_var_record , src_var_unit_conversion
+
+       
         if (len_trim(CS%IC_file) > 0) then
           !  Read the tracer concentrations from a netcdf file.
           if (.not.file_exists(CS%IC_file)) call MOM_error(FATAL, &
