@@ -132,6 +132,8 @@ type, public :: set_diffusivity_CS ; private
   logical :: LOTW_BBL_use_omega ! If true, use simpler/less precise, BBL diffusivity.
   real    :: BBL_effic       ! efficiency with which the energy extracted
                              ! by bottom drag drives BBL diffusion (nondim)
+  real    :: BBL_effic_Ray   ! The efficiency with which the energy extracted
+                             ! by Rayleigh drag drives BBL diffusion, nondim.
   real    :: cdrag           ! quadratic drag coefficient (nondim)
   real    :: IMax_decay      ! inverse of a maximum decay scale for 
                              ! bottom-drag driven turbulence, (1/m)
@@ -715,7 +717,7 @@ subroutine set_diffusivity(u, v, h, u_h, v_h, tv, fluxes, optics, visc, dt, G, C
 
     ! This adds the diffusion sustained by the energy extracted from the flow
     ! by the bottom drag.
-    if (CS%bottomdraglaw .and. (CS%BBL_effic>0.0)) then
+    if (CS%bottomdraglaw .and. (CS%BBL_effic>0.0 .or. CS%BBL_effic_Ray >0.0)) then
       if (CS%use_LOTW_BBL_diffusivity) then
         call add_LOTW_BBL_diffusivity(h, u, v, tv, fluxes, visc, j, N2_int, G, CS, Kd, Kd_int, dd%Kd_BBL)
       else
@@ -1382,7 +1384,7 @@ subroutine add_drag_diffusivity(h, u, v, tv, fluxes, visc, j, &
 
   do_diag_Kd_BBL = associated(Kd_BBL)
   
-  if (.not.(CS%bottomdraglaw .and. (CS%BBL_effic>0.0))) return
+  if (.not.(CS%bottomdraglaw .and. (CS%BBL_effic>0.0 .or. CS%BBL_effic_Ray > 0.0))) return
 
   cdrag_sqrt = sqrt(CS%cdrag)
   TKE_Ray = 0.0 ; Rayleigh_drag = .false.
@@ -1473,7 +1475,7 @@ subroutine add_drag_diffusivity(h, u, v, tv, fluxes, visc, j, &
       else ; TKE_to_layer = 0.0 ; endif
 
       ! TKE_Ray has been initialized to 0 above.
-      if (Rayleigh_drag) TKE_Ray = 0.5*CS%BBL_effic * G%IareaT(i,j) * &
+      if (Rayleigh_drag) TKE_Ray = 0.5*CS%BBL_effic_Ray * G%IareaT(i,j) * &
             ((G%areaCu(i-1,j) * visc%Ray_u(i-1,j,k) * u(i-1,j,k)**2 + &
               G%areaCu(i,j)   * visc%Ray_u(i,j,k)   * u(i,j,k)**2) + &
              (G%areaCv(i,j-1) * visc%Ray_v(i,j-1,k) * v(i,j-1,k)**2 + &
@@ -1589,7 +1591,7 @@ subroutine add_LOTW_BBL_diffusivity(h, u, v, tv, fluxes, visc, j, N2_int, G, CS,
   real, parameter :: von_karm = 0.41 ! Von Karman constant (http://en.wikipedia.org/wiki/Von_Karman_constant)
   logical :: do_diag_Kd_BBL
 
-  if (.not.(CS%bottomdraglaw .and. (CS%BBL_effic>0.0))) return
+  if (.not.(CS%bottomdraglaw .and. (CS%BBL_effic>0.0 .or. CS%BBL_effic_Ray>0.0))) return
   do_diag_Kd_BBL = associated(Kd_BBL)
 
   N2_min = 0.
@@ -1643,7 +1645,7 @@ subroutine add_LOTW_BBL_diffusivity(h, u, v, tv, fluxes, visc, j, N2_int, G, CS,
       dhm1 = G%H_to_m * h(i,j,km1) ! Thickness of level above in m.
 
       ! Add in additional energy input from bottom-drag against slopes (sides)
-      if (Rayleigh_drag) TKE_remaining = TKE_remaining + 0.5*CS%BBL_effic * G%IareaT(i,j) * &
+      if (Rayleigh_drag) TKE_remaining = TKE_remaining + 0.5*CS%BBL_effic_Ray * G%IareaT(i,j) * &
             ((G%areaCu(i-1,j) * visc%Ray_u(i-1,j,k) * u(i-1,j,k)**2 + &
               G%areaCu(i,j)   * visc%Ray_u(i,j,k)   * u(i,j,k)**2) + &
              (G%areaCv(i,j-1) * visc%Ray_v(i,j-1,k) * v(i,j-1,k)**2 + &
@@ -2452,6 +2454,10 @@ subroutine set_diffusivity_init(Time, G, param_file, diag, CS, diag_to_Z_CSp)
                  "The efficiency with which the energy extracted by \n"//&
                  "bottom drag drives BBL diffusion.  This is only \n"//&
                  "used if BOTTOMDRAGLAW is true.", units="nondim", default=0.20)
+    call get_param(param_file, mod, "BBL_EFFIC_RAY", CS%BBL_effic_Ray, &
+                 "The efficiency with which the energy extracted by \n"//&
+                 "Rayleigh drag drives BBL diffusion.  This is only \n"//&
+                 "used if CHANNEL_DRAG is true.", units="nondim", default=0.20)
     call get_param(param_file, mod, "BBL_MIXING_MAX_DECAY", decay_length, &
                  "The maximum decay scale for the BBL diffusion, or 0 \n"//&
                  "to allow the mixing to penetrate as far as \n"//&

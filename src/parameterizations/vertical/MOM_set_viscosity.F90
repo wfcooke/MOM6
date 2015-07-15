@@ -76,6 +76,7 @@ type, public :: set_visc_CS ; private
   real    :: Hbbl           ! The static bottom boundary layer thickness, in
                             ! the same units as thickness (m or kg m-2).
   real    :: cdrag          ! The quadratic drag coefficient.
+  real    :: cdrag_chan     ! The quadratic drag coefficient for channel drag.
   real    :: c_Smag         ! The Laplacian Smagorinsky coefficient for
                             ! calculating the drag in channels.
   real    :: drag_bg_vel    ! An assumed unresolved background velocity for
@@ -714,9 +715,9 @@ subroutine set_viscous_BBL(u, v, h, tv, visc, G, CS)
             if (m==1) then ; Cell_width = G%dy_Cu(i,j)
             else ; Cell_width = G%dx_Cv(i,j) ; endif
             gam = 1.0 - L(K+1)/L(K)
-            Rayleigh = CS%cdrag * (L(K)-L(K+1)) * (1.0-BBL_frac) * &
+            Rayleigh = CS%cdrag_chan * (L(K)-L(K+1)) * (1.0-BBL_frac) * &
                 (12.0*CS%c_Smag*h_vel) /  (12.0*CS%c_Smag*h_vel + G%m_to_H * &
-                 CS%cdrag * gam*(1.0-gam)*(1.0-1.5*gam) * L(K)**2 * Cell_width)
+                 CS%cdrag_chan * gam*(1.0-gam)*(1.0-1.5*gam) * L(K)**2 * Cell_width)
           else ! This layer feels no drag.
             Rayleigh = 0.0
           endif
@@ -1653,6 +1654,11 @@ subroutine set_visc_init(Time, G, param_file, diag, visc, CS)
                  "the velocity field to the bottom stress. CDRAG is only \n"//&
                  "used if BOTTOMDRAGLAW is defined.", units="nondim", &
                  default=0.003)
+    call get_param(param_file, mod, "CDRAG_CHAN", CS%cdrag_chan, &
+                 "CDRAG_CHAN is the drag coefficient relating the magnitude of \n"//&
+                 "the velocity field to the bottom stress where channel \n"//&
+                 "drag is used.", units="nondim", &
+                 default=CS%cdrag)
     call get_param(param_file, mod, "DRAG_BG_VEL", CS%drag_bg_vel, &
                  "DRAG_BG_VEL is either the assumed bottom velocity (with \n"//&
                  "LINEAR_DRAG) or an unresolved  velocity that is \n"//&
