@@ -355,7 +355,18 @@ contains
                                 src_var_nam = g_tracer%src_var_name,                       &
                                 src_var_unit_conversion = g_tracer%src_var_unit_conversion,&
                                 src_var_record = g_tracer%src_var_record,                  &
-                                src_var_gridspec = g_tracer%src_var_gridspec               )
+                                src_var_gridspec = g_tracer%src_var_gridspec,              &
+                                land_fill = CS%tracer_land_val)
+                                
+
+         !Check/apply the bounds for each g_tracer
+         do k=1,nk ; do j=jsc,jec ; do i=isc,iec
+            if(tr_ptr(i,j,k) .ne. CS%tracer_land_val) then
+              if(tr_ptr(i,j,k) .lt. g_tracer%src_var_valid_min) tr_ptr(i,j,k) = g_tracer%src_var_valid_min
+              !Jasmin does not want to apply the maximum for now
+              !if(tr_ptr(i,j,k) .gt. g_tracer%src_var_valid_max) tr_ptr(i,j,k) = g_tracer%src_var_valid_max
+            endif
+         enddo; enddo ; enddo
 
        else !Do it old way if the tracer is not registered to start from a specific source file.  
             !This path should be deprecated if all generic tracers are required to start from specified sources.

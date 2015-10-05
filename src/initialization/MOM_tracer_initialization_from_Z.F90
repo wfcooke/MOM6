@@ -57,7 +57,8 @@ contains
 
 subroutine MOM_initialize_tracer_from_Z(h, tr, G, PF, src_file, src_var_nam, &
                                 src_var_unit_conversion, src_var_record, &
-                                homogenize, useALEremapping, remappingScheme, src_var_gridspec )
+                                homogenize, useALEremapping, remappingScheme, src_var_gridspec, &
+                                land_fill )
 
 
 ! Arguments: 
@@ -78,11 +79,10 @@ subroutine MOM_initialize_tracer_from_Z(h, tr, G, PF, src_file, src_var_nam, &
   logical, optional,                     intent(in) :: homogenize, useALEremapping
   character(len=*),  optional,           intent(in) :: remappingScheme
   character(len=*),  optional,           intent(in) :: src_var_gridspec ! Not implemented yet.
-
-  real :: land_fill = 0.0
+  real,    optional,                     intent(in) :: land_fill
   character(len=200) :: inputdir ! The directory where NetCDF input files are.
   character(len=200) :: mesg
-  real               :: convert
+  real               :: convert,missing_value
   integer            :: recnum
   character(len=10)  :: remapScheme
   logical            :: homog,useALE
@@ -116,7 +116,7 @@ subroutine MOM_initialize_tracer_from_Z(h, tr, G, PF, src_file, src_var_nam, &
 
   real, dimension(:,:,:), allocatable :: tmp1
 
-  real :: tempAvg, missing_value
+  real :: tempAvg
   integer :: nPoints, ans
   integer :: id_clock_routine, id_clock_ALE
   logical :: reentrant_x, tripolar_n
@@ -235,12 +235,13 @@ subroutine MOM_initialize_tracer_from_Z(h, tr, G, PF, src_file, src_var_nam, &
   endif ! useALEremapping
 
 ! Fill land values
-  do k=1,nz ; do j=js,je ; do i=is,ie
-    if (tr(i,j,k) == missing_value) then
-      tr(i,j,k)=land_fill
-    endif
-  enddo ; enddo ; enddo
-
+  if(present(land_fill)) then
+    do k=1,nz ; do j=js,je ; do i=is,ie
+      if (tr(i,j,k) == missing_value) then
+        tr(i,j,k)=land_fill
+      endif
+    enddo ; enddo ; enddo
+  endif
 
   call callTree_leave(trim(mod)//'()')
   call cpu_clock_end(id_clock_routine)
