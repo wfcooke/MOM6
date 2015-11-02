@@ -452,10 +452,10 @@ subroutine remapping_core_PCM( CS, n0, h0, u0, n1, dx, u1 )
   ppoly_r_S(:,:) = 0.0
   ppoly_r_coefficients(:,:) = 0.0
 
-      call PCM_reconstruction( n0, u0, ppoly_r_E, ppoly_r_coefficients)
-      iMethod = INTEGRATION_PCM
+  call PCM_reconstruction( n0, u0, ppoly_r_E, ppoly_r_coefficients)
+  iMethod = INTEGRATION_PCM
 
-  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+  call remapByDeltaZ_PCM( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
 ! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
 
 end subroutine remapping_core_PCM
@@ -487,7 +487,7 @@ subroutine remapping_core_PLM( CS, n0, h0, u0, n1, dx, u1 )
   end if
   iMethod = INTEGRATION_PLM
 
-  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+  call remapByDeltaZ_PLM( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
 ! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
 
 end subroutine remapping_core_PLM
@@ -519,7 +519,7 @@ subroutine remapping_core_PPM_H4( CS, n0, h0, u0, n1, dx, u1 )
       end if
       iMethod = INTEGRATION_PPM
 
-  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+  call remapByDeltaZ_PPM( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
 ! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
 
 end subroutine remapping_core_PPM_H4
@@ -552,7 +552,7 @@ subroutine remapping_core_PPM_IH4( CS, n0, h0, u0, n1, dx, u1 )
       end if
       iMethod = INTEGRATION_PPM
 
-  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+  call remapByDeltaZ_PPM( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
 ! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
 
 end subroutine remapping_core_PPM_IH4
@@ -585,7 +585,7 @@ subroutine remapping_core_PQM_IH4IH3( CS, n0, h0, u0, n1, dx, u1 )
       end if
       iMethod = INTEGRATION_PQM
 
-  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+  call remapByDeltaZ_PQM( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
 ! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
 
 end subroutine remapping_core_PQM_IH4IH3
@@ -618,7 +618,7 @@ subroutine remapping_core_PQM_IH6IH5( CS, n0, h0, u0, n1, dx, u1 )
       end if
       iMethod = INTEGRATION_PQM
 
-  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+  call remapByDeltaZ_PQM( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
 ! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
 
 end subroutine remapping_core_PQM_IH6IH5
@@ -782,6 +782,294 @@ subroutine remapByDeltaZ( n0, h0, u0, ppoly0_E, ppoly0_coefficients, n1, dx1, me
   end do ! end iTarget loop on target grid cells
 
 end subroutine remapByDeltaZ
+
+subroutine remapByDeltaZ_PCM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, n1, dx1, method, u1, h1 )
+  integer,        intent(in)  :: n0     !< Number of cells in source grid
+  real,           intent(in)  :: h0(:)  !< Source grid widths (size n0)
+  real,           intent(in)  :: u0(:)  !< Source cell averages (size n0)
+  real,           intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,           intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer,        intent(in)  :: n1     !< Number of cells in target grid
+  real,           intent(in)  :: dx1(:) !< Target grid edge positions (size n1+1)
+  integer                     :: method !< Remapping scheme to use
+  real,           intent(out) :: u1(:)  !< Target cell averages (size n1)
+  real, optional, intent(out) :: h1(:)  !< Target grid widths (size n1)
+  ! Local variables
+  integer :: iTarget
+  real    :: xL, xR    ! coordinates of target cell edges
+  real    :: xOld, hOld, uOld
+  real    :: xNew, hNew, h_err
+  real    :: uhNew, hFlux, uAve, fluxL, fluxR
+  integer :: jStart ! Used by integrateReconOnInterval()
+  real    :: xStart ! Used by integrateReconOnInterval()
+
+  ! Loop on cells in target grid. For each cell, iTarget, the left flux is
+  ! the right flux of the cell to the left, iTarget-1.
+  ! The left flux is initialized by started at iTarget=0 to calculate the
+  ! right flux which can take into account the target left boundary being
+  ! in the interior of the source domain.
+  fluxR = 0.
+  h_err = 0. ! For measuring round-off error
+  jStart = 1
+  xStart = 0.
+  do iTarget = 0,n1
+    fluxL = fluxR ! This does nothing for iTarget=0
+
+    if (iTarget == 0) then
+      xOld = 0.     ! Left boundary is at x=0
+      hOld = -1.E30 ! Should not be used for iTarget = 0
+      uOld = -1.E30 ! Should not be used for iTarget = 0
+    elseif (iTarget <= n0) then
+      xOld = xOld + h0(iTarget) ! Position of right edge of cell
+      hOld = h0(iTarget)
+      uOld = u0(iTarget)
+      h_err = h_err + epsilon(hOld) * max(hOld, xOld)
+    else
+      hOld = 0.       ! as if for layers>n0, they were vanished
+      uOld = 1.E30    ! and the initial value should not matter
+    endif
+    xNew = xOld + dx1(iTarget+1)
+    xL = min( xOld, xNew )
+    xR = max( xOld, xNew )
+
+    ! hFlux is the positive width of the remapped volume
+    hFlux = abs(dx1(iTarget+1))
+    call integrateReconOnInterval_PCM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                   xL, xR, hFlux, uAve, jStart, xStart )
+    ! uAve is the average value of u, independent of sign of dx1
+    fluxR = dx1(iTarget+1)*uAve ! Includes sign of dx1
+
+    if (iTarget>0) then
+      hNew = hOld + ( dx1(iTarget+1) - dx1(iTarget) )
+      hNew = max( 0., hNew )
+      uhNew = ( uOld * hOld ) + ( fluxR - fluxL )
+      if (hNew>0.) then
+        u1(iTarget) = uhNew / hNew
+      else
+        u1(iTarget) = uAve
+      endif
+      if (present(h1)) h1(iTarget) = hNew
+    endif
+
+  end do ! end iTarget loop on target grid cells
+
+end subroutine remapByDeltaZ_PCM
+
+subroutine remapByDeltaZ_PLM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, n1, dx1, method, u1, h1 )
+  integer,        intent(in)  :: n0     !< Number of cells in source grid
+  real,           intent(in)  :: h0(:)  !< Source grid widths (size n0)
+  real,           intent(in)  :: u0(:)  !< Source cell averages (size n0)
+  real,           intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,           intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer,        intent(in)  :: n1     !< Number of cells in target grid
+  real,           intent(in)  :: dx1(:) !< Target grid edge positions (size n1+1)
+  integer                     :: method !< Remapping scheme to use
+  real,           intent(out) :: u1(:)  !< Target cell averages (size n1)
+  real, optional, intent(out) :: h1(:)  !< Target grid widths (size n1)
+  ! Local variables
+  integer :: iTarget
+  real    :: xL, xR    ! coordinates of target cell edges
+  real    :: xOld, hOld, uOld
+  real    :: xNew, hNew, h_err
+  real    :: uhNew, hFlux, uAve, fluxL, fluxR
+  integer :: jStart ! Used by integrateReconOnInterval()
+  real    :: xStart ! Used by integrateReconOnInterval()
+
+  ! Loop on cells in target grid. For each cell, iTarget, the left flux is
+  ! the right flux of the cell to the left, iTarget-1.
+  ! The left flux is initialized by started at iTarget=0 to calculate the
+  ! right flux which can take into account the target left boundary being
+  ! in the interior of the source domain.
+  fluxR = 0.
+  h_err = 0. ! For measuring round-off error
+  jStart = 1
+  xStart = 0.
+  do iTarget = 0,n1
+    fluxL = fluxR ! This does nothing for iTarget=0
+
+    if (iTarget == 0) then
+      xOld = 0.     ! Left boundary is at x=0
+      hOld = -1.E30 ! Should not be used for iTarget = 0
+      uOld = -1.E30 ! Should not be used for iTarget = 0
+    elseif (iTarget <= n0) then
+      xOld = xOld + h0(iTarget) ! Position of right edge of cell
+      hOld = h0(iTarget)
+      uOld = u0(iTarget)
+      h_err = h_err + epsilon(hOld) * max(hOld, xOld)
+    else
+      hOld = 0.       ! as if for layers>n0, they were vanished
+      uOld = 1.E30    ! and the initial value should not matter
+    endif
+    xNew = xOld + dx1(iTarget+1)
+    xL = min( xOld, xNew )
+    xR = max( xOld, xNew )
+
+    ! hFlux is the positive width of the remapped volume
+    hFlux = abs(dx1(iTarget+1))
+    call integrateReconOnInterval_PLM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                   xL, xR, hFlux, uAve, jStart, xStart )
+    ! uAve is the average value of u, independent of sign of dx1
+    fluxR = dx1(iTarget+1)*uAve ! Includes sign of dx1
+
+    if (iTarget>0) then
+      hNew = hOld + ( dx1(iTarget+1) - dx1(iTarget) )
+      hNew = max( 0., hNew )
+      uhNew = ( uOld * hOld ) + ( fluxR - fluxL )
+      if (hNew>0.) then
+        u1(iTarget) = uhNew / hNew
+      else
+        u1(iTarget) = uAve
+      endif
+      if (present(h1)) h1(iTarget) = hNew
+    endif
+
+  end do ! end iTarget loop on target grid cells
+
+end subroutine remapByDeltaZ_PLM
+
+subroutine remapByDeltaZ_PPM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, n1, dx1, method, u1, h1 )
+  integer,        intent(in)  :: n0     !< Number of cells in source grid
+  real,           intent(in)  :: h0(:)  !< Source grid widths (size n0)
+  real,           intent(in)  :: u0(:)  !< Source cell averages (size n0)
+  real,           intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,           intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer,        intent(in)  :: n1     !< Number of cells in target grid
+  real,           intent(in)  :: dx1(:) !< Target grid edge positions (size n1+1)
+  integer                     :: method !< Remapping scheme to use
+  real,           intent(out) :: u1(:)  !< Target cell averages (size n1)
+  real, optional, intent(out) :: h1(:)  !< Target grid widths (size n1)
+  ! Local variables
+  integer :: iTarget
+  real    :: xL, xR    ! coordinates of target cell edges
+  real    :: xOld, hOld, uOld
+  real    :: xNew, hNew, h_err
+  real    :: uhNew, hFlux, uAve, fluxL, fluxR
+  integer :: jStart ! Used by integrateReconOnInterval()
+  real    :: xStart ! Used by integrateReconOnInterval()
+
+  ! Loop on cells in target grid. For each cell, iTarget, the left flux is
+  ! the right flux of the cell to the left, iTarget-1.
+  ! The left flux is initialized by started at iTarget=0 to calculate the
+  ! right flux which can take into account the target left boundary being
+  ! in the interior of the source domain.
+  fluxR = 0.
+  h_err = 0. ! For measuring round-off error
+  jStart = 1
+  xStart = 0.
+  do iTarget = 0,n1
+    fluxL = fluxR ! This does nothing for iTarget=0
+
+    if (iTarget == 0) then
+      xOld = 0.     ! Left boundary is at x=0
+      hOld = -1.E30 ! Should not be used for iTarget = 0
+      uOld = -1.E30 ! Should not be used for iTarget = 0
+    elseif (iTarget <= n0) then
+      xOld = xOld + h0(iTarget) ! Position of right edge of cell
+      hOld = h0(iTarget)
+      uOld = u0(iTarget)
+      h_err = h_err + epsilon(hOld) * max(hOld, xOld)
+    else
+      hOld = 0.       ! as if for layers>n0, they were vanished
+      uOld = 1.E30    ! and the initial value should not matter
+    endif
+    xNew = xOld + dx1(iTarget+1)
+    xL = min( xOld, xNew )
+    xR = max( xOld, xNew )
+
+    ! hFlux is the positive width of the remapped volume
+    hFlux = abs(dx1(iTarget+1))
+    call integrateReconOnInterval_PPM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                   xL, xR, hFlux, uAve, jStart, xStart )
+    ! uAve is the average value of u, independent of sign of dx1
+    fluxR = dx1(iTarget+1)*uAve ! Includes sign of dx1
+
+    if (iTarget>0) then
+      hNew = hOld + ( dx1(iTarget+1) - dx1(iTarget) )
+      hNew = max( 0., hNew )
+      uhNew = ( uOld * hOld ) + ( fluxR - fluxL )
+      if (hNew>0.) then
+        u1(iTarget) = uhNew / hNew
+      else
+        u1(iTarget) = uAve
+      endif
+      if (present(h1)) h1(iTarget) = hNew
+    endif
+
+  end do ! end iTarget loop on target grid cells
+
+end subroutine remapByDeltaZ_PPM
+
+subroutine remapByDeltaZ_PQM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, n1, dx1, method, u1, h1 )
+  integer,        intent(in)  :: n0     !< Number of cells in source grid
+  real,           intent(in)  :: h0(:)  !< Source grid widths (size n0)
+  real,           intent(in)  :: u0(:)  !< Source cell averages (size n0)
+  real,           intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,           intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer,        intent(in)  :: n1     !< Number of cells in target grid
+  real,           intent(in)  :: dx1(:) !< Target grid edge positions (size n1+1)
+  integer                     :: method !< Remapping scheme to use
+  real,           intent(out) :: u1(:)  !< Target cell averages (size n1)
+  real, optional, intent(out) :: h1(:)  !< Target grid widths (size n1)
+  ! Local variables
+  integer :: iTarget
+  real    :: xL, xR    ! coordinates of target cell edges
+  real    :: xOld, hOld, uOld
+  real    :: xNew, hNew, h_err
+  real    :: uhNew, hFlux, uAve, fluxL, fluxR
+  integer :: jStart ! Used by integrateReconOnInterval()
+  real    :: xStart ! Used by integrateReconOnInterval()
+
+  ! Loop on cells in target grid. For each cell, iTarget, the left flux is
+  ! the right flux of the cell to the left, iTarget-1.
+  ! The left flux is initialized by started at iTarget=0 to calculate the
+  ! right flux which can take into account the target left boundary being
+  ! in the interior of the source domain.
+  fluxR = 0.
+  h_err = 0. ! For measuring round-off error
+  jStart = 1
+  xStart = 0.
+  do iTarget = 0,n1
+    fluxL = fluxR ! This does nothing for iTarget=0
+
+    if (iTarget == 0) then
+      xOld = 0.     ! Left boundary is at x=0
+      hOld = -1.E30 ! Should not be used for iTarget = 0
+      uOld = -1.E30 ! Should not be used for iTarget = 0
+    elseif (iTarget <= n0) then
+      xOld = xOld + h0(iTarget) ! Position of right edge of cell
+      hOld = h0(iTarget)
+      uOld = u0(iTarget)
+      h_err = h_err + epsilon(hOld) * max(hOld, xOld)
+    else
+      hOld = 0.       ! as if for layers>n0, they were vanished
+      uOld = 1.E30    ! and the initial value should not matter
+    endif
+    xNew = xOld + dx1(iTarget+1)
+    xL = min( xOld, xNew )
+    xR = max( xOld, xNew )
+
+    ! hFlux is the positive width of the remapped volume
+    hFlux = abs(dx1(iTarget+1))
+    call integrateReconOnInterval_PQM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                   xL, xR, hFlux, uAve, jStart, xStart )
+    ! uAve is the average value of u, independent of sign of dx1
+    fluxR = dx1(iTarget+1)*uAve ! Includes sign of dx1
+
+    if (iTarget>0) then
+      hNew = hOld + ( dx1(iTarget+1) - dx1(iTarget) )
+      hNew = max( 0., hNew )
+      uhNew = ( uOld * hOld ) + ( fluxR - fluxL )
+      if (hNew>0.) then
+        u1(iTarget) = uhNew / hNew
+      else
+        u1(iTarget) = uAve
+      endif
+      if (present(h1)) h1(iTarget) = hNew
+    endif
+
+  end do ! end iTarget loop on target grid cells
+
+end subroutine remapByDeltaZ_PQM
 
 
 !> Integrate the reconstructed column profile over a single cell
@@ -1137,6 +1425,854 @@ endif
   end if ! end if clause to check if cell is vanished
 
 end subroutine integrateReconOnInterval
+
+subroutine integrateReconOnInterval_PCM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                     xL, xR, hC, uAve, jStart, xStart )
+  integer, intent(in)  :: n0       !< Number of cells in source grid
+  real,    intent(in)  :: h0(:)    !< Source grid sizes (size n0)
+  real,    intent(in)  :: u0(:)    !< Source cell averages
+  real,    intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,    intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer, intent(in)  :: method   !< Remapping scheme to use
+  real,    intent(in)  :: xL, xR   !< Left/right edges of target cell
+  real,    intent(in)  :: hC       !< Cell width hC = xR - xL
+  real,    intent(out) :: uAve     !< Average value on target cell
+  integer, intent(inout) :: jStart !< The index of the cell to start searching from
+                                   !< On exit, contains index of last cell used
+  real,    intent(inout) :: xStart !< The left edge position of cell jStart
+                                   !< On first entry should be 0.
+  ! Local variables
+  integer :: j, k
+  integer :: jL, jR       ! indexes of source cells containing target
+                          ! cell edges
+  real    :: q            ! complete integration
+  real    :: xi0, xi1     ! interval of integration (local -- normalized
+                          ! -- coordinates)
+  real    :: x0jLl, x0jLr ! Left/right position of cell jL
+  real    :: x0jRl, x0jRr ! Left/right position of cell jR
+  real    :: hAct         ! The distance actually used in the integration
+                          ! (notionally xR - xL) which differs due to roundoff.
+  integer :: n1,n2,n3,n4,n5
+
+  n1=1;n2=2;n3=3;n4=4;n5=5
+
+  q = -1.E30
+  x0jLl = -1.E30
+  x0jRl = -1.E30
+
+  ! Find the left most cell in source grid spanned by the target cell
+  jL = -1
+  x0jLr = xStart
+  do j = jStart, n0
+    x0jLl = x0jLr
+    x0jLr = x0jLl + h0(j)
+    ! Left edge is found in cell j
+    if ( ( xL >= x0jLl ) .AND. ( xL <= x0jLr ) ) then
+      jL = j
+      exit ! once target grid cell is found, exit loop
+    endif
+  enddo
+  jStart = jL
+  xStart = x0jLl
+
+! ! HACK to handle round-off problems. Need only at  j=n0.
+! ! This moves the effective cell boundary outwards a smidgen.
+! if (xL>x0jLr) x0jLr = xL
+
+  ! If, at this point, jL is equal to -1, it means the vanished
+  ! cell lies outside the source grid. In other words, it means that
+  ! the source and target grids do not cover the same physical domain
+  ! and there is something very wrong !
+  if ( jL == -1 ) call MOM_error(FATAL, &
+          'MOM_remapping, integrateReconOnInterval: '//&
+          'The location of the left-most cell could not be found')
+
+
+  ! ============================================================
+  ! Check whether target cell is vanished. If it is, the cell
+  ! average is simply the interpolated value at the location
+  ! of the vanished cell. If it isn't, we need to integrate the
+  ! quantity within the cell and divide by the cell width to
+  ! determine the cell average.
+  ! ============================================================
+  ! 1. Cell is vanished
+ !if ( abs(xR - xL) <= epsilon(xR)*max(abs(xR),abs(xL)) ) then
+  if ( abs(xR - xL) == 0.0 ) then
+
+    ! We check whether the source cell (i.e. the cell in which the
+    ! vanished target cell lies) is vanished. If it is, the interpolated
+    ! value is set to be mean of the edge values (which should be the same).
+    ! If it isn't, we simply interpolate.
+    if ( h0(jL) == 0.0 ) then
+      uAve = 0.5 * ( ppoly0_E(jL,1) + ppoly0_E(jL,2) )
+    else
+      ! WHY IS THIS NOT WRITTEN AS xi0 = ( xL - x0jLl ) / h0(jL) ---AJA
+      xi0 = xL / ( h0(jL) + h_neglect ) - x0jLl / ( h0(jL) + h_neglect )
+
+          uAve = ppoly0_coefficients(jL,1)
+
+    end if ! end checking whether source cell is vanished
+
+  ! 2. Cell is not vanished
+  else
+
+    ! Find the right most cell in source grid spanned by the target cell
+    jR = -1
+    x0jRr = xStart
+    do j = jStart,n0
+      x0jRl = x0jRr
+      x0jRr = x0jRl + h0(j)
+      ! Right edge is found in cell j
+      if ( ( xR >= x0jRl ) .AND. ( xR <= x0jRr ) ) then
+        jR = j
+        exit  ! once target grid cell is found, exit loop
+      endif
+    enddo ! end loop on source grid cells
+
+    ! If xR>x0jRr then the previous loop reached j=n0 and the target
+    ! position, xR, was beyond the right edge of the source grid (h0).
+    ! This can happen due to roundoff, in which case we set jR=n0.
+    if (xR>x0jRr) jR = n0
+
+    ! To integrate, two cases must be considered: (1) the target cell is
+    ! entirely contained within a cell of the source grid and (2) the target
+    ! cell spans at least two cells of the source grid.
+
+    if ( jL == jR ) then
+      ! The target cell is entirely contained within a cell of the source
+      ! grid. This situation is represented by the following schematic, where
+      ! the cell in which xL and xR are located has index jL=jR :
+      !
+      ! ----|-----o--------o----------|-------------
+      !           xL       xR
+      !
+      ! Determine normalized coordinates
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+      xi1 = max( 0., min( 1., ( xR - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = xL / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+      xi1 = xR / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+#endif
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+      ! Depending on which polynomial is used, integrate quantity
+      ! between xi0 and xi1. Integration is carried out in normalized
+      ! coordinates, hence: \int_xL^xR p(x) dx = h \int_xi0^xi1 p(xi) dxi
+          q = ppoly0_coefficients(jL,1) * ( xR - xL )
+
+    else
+    ! The target cell spans at least two cells of the source grid.
+    ! This situation is represented by the following schematic, where
+    ! the cells in which xL and xR are located have indexes jL and jR,
+    ! respectively :
+    !
+    ! ----|-----o---|--- ... --|---o----------|-------------
+    !           xL                 xR
+    !
+    ! We first integrate from xL up to the right boundary of cell jL, then
+    ! add the integrated amounts of cells located between jL and jR and then
+    ! integrate from the left boundary of cell jR up to xR
+
+      q = 0.0
+
+      ! Integrate from xL up to right boundary of cell jL
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = (xL - x0jLl) / ( h0(jL) + h_neglect )
+#endif
+      xi1 = 1.0
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+          q = q + ppoly0_coefficients(jL,1) * ( x0jLr - xL )
+
+      ! Integrate contents within cells strictly comprised between jL and jR
+      if ( jR > (jL+1) ) then
+        do k = jL+1,jR-1
+          q = q + h0(k) * u0(k)
+          hAct = hAct + h0(k)
+        end do
+      end if
+
+      ! Integrate from left boundary of cell jR up to xR
+      xi0 = 0.0
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi1 = max( 0., min( 1., ( xR - x0jRl ) / ( h0(jR) + h_neglect ) ) )
+#else
+      xi1 = (xR - x0jRl) / ( h0(jR) + h_neglect )
+#endif
+
+      hAct = hAct + h0(jR) * ( xi1 - xi0 )
+
+          q = q + ppoly0_coefficients(jR,1) * ( xR - x0jRl )
+
+    end if ! end integration for non-vanished cells
+
+    ! The cell average is the integrated value divided by the cell width
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+if (hAct==0.) then
+    uAve = ppoly0_coefficients(jL,1)
+else
+    uAve = q / hAct
+endif
+#else
+    uAve = q / hC
+#endif
+
+  end if ! end if clause to check if cell is vanished
+
+end subroutine integrateReconOnInterval_PCM
+
+subroutine integrateReconOnInterval_PLM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                     xL, xR, hC, uAve, jStart, xStart )
+  integer, intent(in)  :: n0       !< Number of cells in source grid
+  real,    intent(in)  :: h0(:)    !< Source grid sizes (size n0)
+  real,    intent(in)  :: u0(:)    !< Source cell averages
+  real,    intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,    intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer, intent(in)  :: method   !< Remapping scheme to use
+  real,    intent(in)  :: xL, xR   !< Left/right edges of target cell
+  real,    intent(in)  :: hC       !< Cell width hC = xR - xL
+  real,    intent(out) :: uAve     !< Average value on target cell
+  integer, intent(inout) :: jStart !< The index of the cell to start searching from
+                                   !< On exit, contains index of last cell used
+  real,    intent(inout) :: xStart !< The left edge position of cell jStart
+                                   !< On first entry should be 0.
+  ! Local variables
+  integer :: j, k
+  integer :: jL, jR       ! indexes of source cells containing target
+                          ! cell edges
+  real    :: q            ! complete integration
+  real    :: xi0, xi1     ! interval of integration (local -- normalized
+                          ! -- coordinates)
+  real    :: x0jLl, x0jLr ! Left/right position of cell jL
+  real    :: x0jRl, x0jRr ! Left/right position of cell jR
+  real    :: hAct         ! The distance actually used in the integration
+                          ! (notionally xR - xL) which differs due to roundoff.
+  integer :: n1,n2,n3,n4,n5
+
+  n1=1;n2=2;n3=3;n4=4;n5=5
+
+  q = -1.E30
+  x0jLl = -1.E30
+  x0jRl = -1.E30
+
+  ! Find the left most cell in source grid spanned by the target cell
+  jL = -1
+  x0jLr = xStart
+  do j = jStart, n0
+    x0jLl = x0jLr
+    x0jLr = x0jLl + h0(j)
+    ! Left edge is found in cell j
+    if ( ( xL >= x0jLl ) .AND. ( xL <= x0jLr ) ) then
+      jL = j
+      exit ! once target grid cell is found, exit loop
+    endif
+  enddo
+  jStart = jL
+  xStart = x0jLl
+
+! ! HACK to handle round-off problems. Need only at  j=n0.
+! ! This moves the effective cell boundary outwards a smidgen.
+! if (xL>x0jLr) x0jLr = xL
+
+  ! If, at this point, jL is equal to -1, it means the vanished
+  ! cell lies outside the source grid. In other words, it means that
+  ! the source and target grids do not cover the same physical domain
+  ! and there is something very wrong !
+  if ( jL == -1 ) call MOM_error(FATAL, &
+          'MOM_remapping, integrateReconOnInterval: '//&
+          'The location of the left-most cell could not be found')
+
+
+  ! ============================================================
+  ! Check whether target cell is vanished. If it is, the cell
+  ! average is simply the interpolated value at the location
+  ! of the vanished cell. If it isn't, we need to integrate the
+  ! quantity within the cell and divide by the cell width to
+  ! determine the cell average.
+  ! ============================================================
+  ! 1. Cell is vanished
+ !if ( abs(xR - xL) <= epsilon(xR)*max(abs(xR),abs(xL)) ) then
+  if ( abs(xR - xL) == 0.0 ) then
+
+    ! We check whether the source cell (i.e. the cell in which the
+    ! vanished target cell lies) is vanished. If it is, the interpolated
+    ! value is set to be mean of the edge values (which should be the same).
+    ! If it isn't, we simply interpolate.
+    if ( h0(jL) == 0.0 ) then
+      uAve = 0.5 * ( ppoly0_E(jL,1) + ppoly0_E(jL,2) )
+    else
+      ! WHY IS THIS NOT WRITTEN AS xi0 = ( xL - x0jLl ) / h0(jL) ---AJA
+      xi0 = xL / ( h0(jL) + h_neglect ) - x0jLl / ( h0(jL) + h_neglect )
+
+          !uAve = evaluation_polynomial( ppoly0_coefficients(jL,:), 2, xi0 )
+          uAve = ppoly0_coefficients(jL,1)          &
+               + ppoly0_coefficients(jL,2) * xi0
+
+    end if ! end checking whether source cell is vanished
+
+  ! 2. Cell is not vanished
+  else
+
+    ! Find the right most cell in source grid spanned by the target cell
+    jR = -1
+    x0jRr = xStart
+    do j = jStart,n0
+      x0jRl = x0jRr
+      x0jRr = x0jRl + h0(j)
+      ! Right edge is found in cell j
+      if ( ( xR >= x0jRl ) .AND. ( xR <= x0jRr ) ) then
+        jR = j
+        exit  ! once target grid cell is found, exit loop
+      endif
+    enddo ! end loop on source grid cells
+
+    ! If xR>x0jRr then the previous loop reached j=n0 and the target
+    ! position, xR, was beyond the right edge of the source grid (h0).
+    ! This can happen due to roundoff, in which case we set jR=n0.
+    if (xR>x0jRr) jR = n0
+
+    ! To integrate, two cases must be considered: (1) the target cell is
+    ! entirely contained within a cell of the source grid and (2) the target
+    ! cell spans at least two cells of the source grid.
+
+    if ( jL == jR ) then
+      ! The target cell is entirely contained within a cell of the source
+      ! grid. This situation is represented by the following schematic, where
+      ! the cell in which xL and xR are located has index jL=jR :
+      !
+      ! ----|-----o--------o----------|-------------
+      !           xL       xR
+      !
+      ! Determine normalized coordinates
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+      xi1 = max( 0., min( 1., ( xR - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = xL / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+      xi1 = xR / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+#endif
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+      ! Depending on which polynomial is used, integrate quantity
+      ! between xi0 and xi1. Integration is carried out in normalized
+      ! coordinates, hence: \int_xL^xR p(x) dx = h \int_xi0^xi1 p(xi) dxi
+          q = h0(jL) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 1 )
+              (ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)     &
+              +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2) )
+
+    else
+    ! The target cell spans at least two cells of the source grid.
+    ! This situation is represented by the following schematic, where
+    ! the cells in which xL and xR are located have indexes jL and jR,
+    ! respectively :
+    !
+    ! ----|-----o---|--- ... --|---o----------|-------------
+    !           xL                 xR
+    !
+    ! We first integrate from xL up to the right boundary of cell jL, then
+    ! add the integrated amounts of cells located between jL and jR and then
+    ! integrate from the left boundary of cell jR up to xR
+
+      q = 0.0
+
+      ! Integrate from xL up to right boundary of cell jL
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = (xL - x0jLl) / ( h0(jL) + h_neglect )
+#endif
+      xi1 = 1.0
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+          q = q + h0(jL) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 1 )
+              (ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)     &
+              +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2) )
+     ! Integrate contents within cells strictly comprised between jL and jR
+      if ( jR > (jL+1) ) then
+        do k = jL+1,jR-1
+          q = q + h0(k) * u0(k)
+          hAct = hAct + h0(k)
+        end do
+      end if
+
+      ! Integrate from left boundary of cell jR up to xR
+      xi0 = 0.0
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi1 = max( 0., min( 1., ( xR - x0jRl ) / ( h0(jR) + h_neglect ) ) )
+#else
+      xi1 = (xR - x0jRl) / ( h0(jR) + h_neglect )
+#endif
+
+      hAct = hAct + h0(jR) * ( xi1 - xi0 )
+
+          q = q + h0(jR) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jR,:), 1 )
+              (ppoly0_coefficients(jR,1)*(xi1-xi0)/real(n1)     &
+              +ppoly0_coefficients(jR,2)*(xi1*xi1-xi0*xi0)/real(n2) )
+
+    end if ! end integration for non-vanished cells
+
+    ! The cell average is the integrated value divided by the cell width
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+if (hAct==0.) then
+    uAve = ppoly0_coefficients(jL,1)
+else
+    uAve = q / hAct
+endif
+#else
+    uAve = q / hC
+#endif
+
+  end if ! end if clause to check if cell is vanished
+
+end subroutine integrateReconOnInterval_PLM
+
+subroutine integrateReconOnInterval_PPM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                     xL, xR, hC, uAve, jStart, xStart )
+  integer, intent(in)  :: n0       !< Number of cells in source grid
+  real,    intent(in)  :: h0(:)    !< Source grid sizes (size n0)
+  real,    intent(in)  :: u0(:)    !< Source cell averages
+  real,    intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,    intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer, intent(in)  :: method   !< Remapping scheme to use
+  real,    intent(in)  :: xL, xR   !< Left/right edges of target cell
+  real,    intent(in)  :: hC       !< Cell width hC = xR - xL
+  real,    intent(out) :: uAve     !< Average value on target cell
+  integer, intent(inout) :: jStart !< The index of the cell to start searching from
+                                   !< On exit, contains index of last cell used
+  real,    intent(inout) :: xStart !< The left edge position of cell jStart
+                                   !< On first entry should be 0.
+  ! Local variables
+  integer :: j, k
+  integer :: jL, jR       ! indexes of source cells containing target
+                          ! cell edges
+  real    :: q            ! complete integration
+  real    :: xi0, xi1     ! interval of integration (local -- normalized
+                          ! -- coordinates)
+  real    :: x0jLl, x0jLr ! Left/right position of cell jL
+  real    :: x0jRl, x0jRr ! Left/right position of cell jR
+  real    :: hAct         ! The distance actually used in the integration
+                          ! (notionally xR - xL) which differs due to roundoff.
+  integer :: n1,n2,n3,n4,n5
+
+  n1=1;n2=2;n3=3;n4=4;n5=5
+
+  q = -1.E30
+  x0jLl = -1.E30
+  x0jRl = -1.E30
+
+  ! Find the left most cell in source grid spanned by the target cell
+  jL = -1
+  x0jLr = xStart
+  do j = jStart, n0
+    x0jLl = x0jLr
+    x0jLr = x0jLl + h0(j)
+    ! Left edge is found in cell j
+    if ( ( xL >= x0jLl ) .AND. ( xL <= x0jLr ) ) then
+      jL = j
+      exit ! once target grid cell is found, exit loop
+    endif
+  enddo
+  jStart = jL
+  xStart = x0jLl
+
+! ! HACK to handle round-off problems. Need only at  j=n0.
+! ! This moves the effective cell boundary outwards a smidgen.
+! if (xL>x0jLr) x0jLr = xL
+
+  ! If, at this point, jL is equal to -1, it means the vanished
+  ! cell lies outside the source grid. In other words, it means that
+  ! the source and target grids do not cover the same physical domain
+  ! and there is something very wrong !
+  if ( jL == -1 ) call MOM_error(FATAL, &
+          'MOM_remapping, integrateReconOnInterval: '//&
+          'The location of the left-most cell could not be found')
+
+
+  ! ============================================================
+  ! Check whether target cell is vanished. If it is, the cell
+  ! average is simply the interpolated value at the location
+  ! of the vanished cell. If it isn't, we need to integrate the
+  ! quantity within the cell and divide by the cell width to
+  ! determine the cell average.
+  ! ============================================================
+  ! 1. Cell is vanished
+ !if ( abs(xR - xL) <= epsilon(xR)*max(abs(xR),abs(xL)) ) then
+  if ( abs(xR - xL) == 0.0 ) then
+
+    ! We check whether the source cell (i.e. the cell in which the
+    ! vanished target cell lies) is vanished. If it is, the interpolated
+    ! value is set to be mean of the edge values (which should be the same).
+    ! If it isn't, we simply interpolate.
+    if ( h0(jL) == 0.0 ) then
+      uAve = 0.5 * ( ppoly0_E(jL,1) + ppoly0_E(jL,2) )
+    else
+      ! WHY IS THIS NOT WRITTEN AS xi0 = ( xL - x0jLl ) / h0(jL) ---AJA
+      xi0 = xL / ( h0(jL) + h_neglect ) - x0jLl / ( h0(jL) + h_neglect )
+
+          !uAve = evaluation_polynomial( ppoly0_coefficients(jL,:), 3, xi0 )
+          uAve = (ppoly0_coefficients(jL,1)         &
+                + ppoly0_coefficients(jL,2) * xi0)  &
+               + ppoly0_coefficients(jL,3) * xi0*xi0
+    end if ! end checking whether source cell is vanished
+
+  ! 2. Cell is not vanished
+  else
+
+    ! Find the right most cell in source grid spanned by the target cell
+    jR = -1
+    x0jRr = xStart
+    do j = jStart,n0
+      x0jRl = x0jRr
+      x0jRr = x0jRl + h0(j)
+      ! Right edge is found in cell j
+      if ( ( xR >= x0jRl ) .AND. ( xR <= x0jRr ) ) then
+        jR = j
+        exit  ! once target grid cell is found, exit loop
+      endif
+    enddo ! end loop on source grid cells
+
+    ! If xR>x0jRr then the previous loop reached j=n0 and the target
+    ! position, xR, was beyond the right edge of the source grid (h0).
+    ! This can happen due to roundoff, in which case we set jR=n0.
+    if (xR>x0jRr) jR = n0
+
+    ! To integrate, two cases must be considered: (1) the target cell is
+    ! entirely contained within a cell of the source grid and (2) the target
+    ! cell spans at least two cells of the source grid.
+
+    if ( jL == jR ) then
+      ! The target cell is entirely contained within a cell of the source
+      ! grid. This situation is represented by the following schematic, where
+      ! the cell in which xL and xR are located has index jL=jR :
+      !
+      ! ----|-----o--------o----------|-------------
+      !           xL       xR
+      !
+      ! Determine normalized coordinates
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+      xi1 = max( 0., min( 1., ( xR - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = xL / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+      xi1 = xR / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+#endif
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+      ! Depending on which polynomial is used, integrate quantity
+      ! between xi0 and xi1. Integration is carried out in normalized
+      ! coordinates, hence: \int_xL^xR p(x) dx = h \int_xi0^xi1 p(xi) dxi
+          q = h0(jL) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 2 )
+              ((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)    &
+               +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2))   &
+              +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3)) 
+
+    else
+    ! The target cell spans at least two cells of the source grid.
+    ! This situation is represented by the following schematic, where
+    ! the cells in which xL and xR are located have indexes jL and jR,
+    ! respectively :
+    !
+    ! ----|-----o---|--- ... --|---o----------|-------------
+    !           xL                 xR
+    !
+    ! We first integrate from xL up to the right boundary of cell jL, then
+    ! add the integrated amounts of cells located between jL and jR and then
+    ! integrate from the left boundary of cell jR up to xR
+
+      q = 0.0
+
+      ! Integrate from xL up to right boundary of cell jL
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = (xL - x0jLl) / ( h0(jL) + h_neglect )
+#endif
+      xi1 = 1.0
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+          q = q + h0(jL) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 2 )
+              ((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)    &
+               +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2))   &
+              +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3)) 
+
+      ! Integrate contents within cells strictly comprised between jL and jR
+      if ( jR > (jL+1) ) then
+        do k = jL+1,jR-1
+          q = q + h0(k) * u0(k)
+          hAct = hAct + h0(k)
+        end do
+      end if
+
+      ! Integrate from left boundary of cell jR up to xR
+      xi0 = 0.0
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi1 = max( 0., min( 1., ( xR - x0jRl ) / ( h0(jR) + h_neglect ) ) )
+#else
+      xi1 = (xR - x0jRl) / ( h0(jR) + h_neglect )
+#endif
+
+      hAct = hAct + h0(jR) * ( xi1 - xi0 )
+
+          q = q + h0(jR) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jR,:), 2 )
+              ((ppoly0_coefficients(jR,1)*(xi1-xi0)/real(n1)    &
+               +ppoly0_coefficients(jR,2)*(xi1*xi1-xi0*xi0)/real(n2))   &
+              +ppoly0_coefficients(jR,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3)) 
+    end if ! end integration for non-vanished cells
+
+    ! The cell average is the integrated value divided by the cell width
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+if (hAct==0.) then
+    uAve = ppoly0_coefficients(jL,1)
+else
+    uAve = q / hAct
+endif
+#else
+    uAve = q / hC
+#endif
+
+  end if ! end if clause to check if cell is vanished
+
+end subroutine integrateReconOnInterval_PPM
+
+
+subroutine integrateReconOnInterval_PQM( n0, h0, u0, ppoly0_E, ppoly0_coefficients, method, &
+                                     xL, xR, hC, uAve, jStart, xStart )
+  integer, intent(in)  :: n0       !< Number of cells in source grid
+  real,    intent(in)  :: h0(:)    !< Source grid sizes (size n0)
+  real,    intent(in)  :: u0(:)    !< Source cell averages
+  real,    intent(in)  :: ppoly0_E(:,:)            !< Edge value of polynomial
+  real,    intent(in)  :: ppoly0_coefficients(:,:) !< Coefficients of polynomial
+  integer, intent(in)  :: method   !< Remapping scheme to use
+  real,    intent(in)  :: xL, xR   !< Left/right edges of target cell
+  real,    intent(in)  :: hC       !< Cell width hC = xR - xL
+  real,    intent(out) :: uAve     !< Average value on target cell
+  integer, intent(inout) :: jStart !< The index of the cell to start searching from
+                                   !< On exit, contains index of last cell used
+  real,    intent(inout) :: xStart !< The left edge position of cell jStart
+                                   !< On first entry should be 0.
+  ! Local variables
+  integer :: j, k
+  integer :: jL, jR       ! indexes of source cells containing target
+                          ! cell edges
+  real    :: q            ! complete integration
+  real    :: xi0, xi1     ! interval of integration (local -- normalized
+                          ! -- coordinates)
+  real    :: x0jLl, x0jLr ! Left/right position of cell jL
+  real    :: x0jRl, x0jRr ! Left/right position of cell jR
+  real    :: hAct         ! The distance actually used in the integration
+                          ! (notionally xR - xL) which differs due to roundoff.
+  integer :: n1,n2,n3,n4,n5
+
+  n1=1;n2=2;n3=3;n4=4;n5=5
+
+  q = -1.E30
+  x0jLl = -1.E30
+  x0jRl = -1.E30
+
+  ! Find the left most cell in source grid spanned by the target cell
+  jL = -1
+  x0jLr = xStart
+  do j = jStart, n0
+    x0jLl = x0jLr
+    x0jLr = x0jLl + h0(j)
+    ! Left edge is found in cell j
+    if ( ( xL >= x0jLl ) .AND. ( xL <= x0jLr ) ) then
+      jL = j
+      exit ! once target grid cell is found, exit loop
+    endif
+  enddo
+  jStart = jL
+  xStart = x0jLl
+
+! ! HACK to handle round-off problems. Need only at  j=n0.
+! ! This moves the effective cell boundary outwards a smidgen.
+! if (xL>x0jLr) x0jLr = xL
+
+  ! If, at this point, jL is equal to -1, it means the vanished
+  ! cell lies outside the source grid. In other words, it means that
+  ! the source and target grids do not cover the same physical domain
+  ! and there is something very wrong !
+  if ( jL == -1 ) call MOM_error(FATAL, &
+          'MOM_remapping, integrateReconOnInterval: '//&
+          'The location of the left-most cell could not be found')
+
+
+  ! ============================================================
+  ! Check whether target cell is vanished. If it is, the cell
+  ! average is simply the interpolated value at the location
+  ! of the vanished cell. If it isn't, we need to integrate the
+  ! quantity within the cell and divide by the cell width to
+  ! determine the cell average.
+  ! ============================================================
+  ! 1. Cell is vanished
+ !if ( abs(xR - xL) <= epsilon(xR)*max(abs(xR),abs(xL)) ) then
+  if ( abs(xR - xL) == 0.0 ) then
+
+    ! We check whether the source cell (i.e. the cell in which the
+    ! vanished target cell lies) is vanished. If it is, the interpolated
+    ! value is set to be mean of the edge values (which should be the same).
+    ! If it isn't, we simply interpolate.
+    if ( h0(jL) == 0.0 ) then
+      uAve = 0.5 * ( ppoly0_E(jL,1) + ppoly0_E(jL,2) )
+    else
+      ! WHY IS THIS NOT WRITTEN AS xi0 = ( xL - x0jLl ) / h0(jL) ---AJA
+      xi0 = xL / ( h0(jL) + h_neglect ) - x0jLl / ( h0(jL) + h_neglect )
+
+          !uAve = evaluation_polynomial( ppoly0_coefficients(jL,:), 5, xi0 )
+          uAve = (((ppoly0_coefficients(jL,1)          &
+               + ppoly0_coefficients(jL,2) * xi0)    &
+               + ppoly0_coefficients(jL,3) * xi0*xi0) &
+               + ppoly0_coefficients(jL,4) * xi0*xi0*xi0) &
+               + ppoly0_coefficients(jL,5) * xi0*xi0*xi0*xi0
+
+    end if ! end checking whether source cell is vanished
+
+  ! 2. Cell is not vanished
+  else
+
+    ! Find the right most cell in source grid spanned by the target cell
+    jR = -1
+    x0jRr = xStart
+    do j = jStart,n0
+      x0jRl = x0jRr
+      x0jRr = x0jRl + h0(j)
+      ! Right edge is found in cell j
+      if ( ( xR >= x0jRl ) .AND. ( xR <= x0jRr ) ) then
+        jR = j
+        exit  ! once target grid cell is found, exit loop
+      endif
+    enddo ! end loop on source grid cells
+
+    ! If xR>x0jRr then the previous loop reached j=n0 and the target
+    ! position, xR, was beyond the right edge of the source grid (h0).
+    ! This can happen due to roundoff, in which case we set jR=n0.
+    if (xR>x0jRr) jR = n0
+
+    ! To integrate, two cases must be considered: (1) the target cell is
+    ! entirely contained within a cell of the source grid and (2) the target
+    ! cell spans at least two cells of the source grid.
+
+    if ( jL == jR ) then
+      ! The target cell is entirely contained within a cell of the source
+      ! grid. This situation is represented by the following schematic, where
+      ! the cell in which xL and xR are located has index jL=jR :
+      !
+      ! ----|-----o--------o----------|-------------
+      !           xL       xR
+      !
+      ! Determine normalized coordinates
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+      xi1 = max( 0., min( 1., ( xR - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = xL / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+      xi1 = xR / h0(jL) - x0jLl / ( h0(jL) + h_neglect )
+#endif
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+      ! Depending on which polynomial is used, integrate quantity
+      ! between xi0 and xi1. Integration is carried out in normalized
+      ! coordinates, hence: \int_xL^xR p(x) dx = h \int_xi0^xi1 p(xi) dxi
+          q = h0(jL) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 4 )
+              ((((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)  &
+                 +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2)) &
+                +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3))  &
+               +ppoly0_coefficients(jL,4)*(xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0)/real(n4))   &
+              +ppoly0_coefficients(jL,5)*(xi1*xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0*xi0)/real(n5) )
+
+    else
+    ! The target cell spans at least two cells of the source grid.
+    ! This situation is represented by the following schematic, where
+    ! the cells in which xL and xR are located have indexes jL and jR,
+    ! respectively :
+    !
+    ! ----|-----o---|--- ... --|---o----------|-------------
+    !           xL                 xR
+    !
+    ! We first integrate from xL up to the right boundary of cell jL, then
+    ! add the integrated amounts of cells located between jL and jR and then
+    ! integrate from the left boundary of cell jR up to xR
+
+      q = 0.0
+
+      ! Integrate from xL up to right boundary of cell jL
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi0 = max( 0., min( 1., ( xL - x0jLl ) / ( h0(jL) + h_neglect ) ) )
+#else
+      xi0 = (xL - x0jLl) / ( h0(jL) + h_neglect )
+#endif
+      xi1 = 1.0
+
+      hAct = h0(jL) * ( xi1 - xi0 )
+
+          q = q + h0(jL) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 4 )
+              ((((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)  &
+                 +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2)) &
+                +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3))  &
+               +ppoly0_coefficients(jL,4)*(xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0)/real(n4))   &
+              +ppoly0_coefficients(jL,5)*(xi1*xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0*xi0)/real(n5) )
+
+      ! Integrate contents within cells strictly comprised between jL and jR
+      if ( jR > (jL+1) ) then
+        do k = jL+1,jR-1
+          q = q + h0(k) * u0(k)
+          hAct = hAct + h0(k)
+        end do
+      end if
+
+      ! Integrate from left boundary of cell jR up to xR
+      xi0 = 0.0
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+      xi1 = max( 0., min( 1., ( xR - x0jRl ) / ( h0(jR) + h_neglect ) ) )
+#else
+      xi1 = (xR - x0jRl) / ( h0(jR) + h_neglect )
+#endif
+
+      hAct = hAct + h0(jR) * ( xi1 - xi0 )
+
+          q = q + h0(jR) * &
+              !integration_polynomial( xi0, xi1, ppoly0_coefficients(jR,:), 4 )
+              ((((ppoly0_coefficients(jR,1)*(xi1-xi0)/real(n1)  &
+                 +ppoly0_coefficients(jR,2)*(xi1*xi1-xi0*xi0)/real(n2)) &
+                +ppoly0_coefficients(jR,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3))  &
+               +ppoly0_coefficients(jR,4)*(xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0)/real(n4))   &
+              +ppoly0_coefficients(jR,5)*(xi1*xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0*xi0)/real(n5) )
+    end if ! end integration for non-vanished cells
+
+    ! The cell average is the integrated value divided by the cell width
+#ifdef __USE_ROUNDOFF_SAFE_ADJUSTMENTS__
+if (hAct==0.) then
+    uAve = ppoly0_coefficients(jL,1)
+else
+    uAve = q / hAct
+endif
+#else
+    uAve = q / hC
+#endif
+
+  end if ! end if clause to check if cell is vanished
+
+end subroutine integrateReconOnInterval_PQM
+
+
 
 !> Calculates the change in interface positions based on h1 and h2
 subroutine dzFromH1H2( n1, h1, n2, h2, dx )
