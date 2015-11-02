@@ -31,6 +31,10 @@ end type
 
 ! The following routines are visible to the outside world
 public remapping_core
+public remapping_core_PCM, remapping_core_PLM
+public remapping_core_PPM_H4, remapping_core_PPM_IH4
+public remapping_core_PQM_IH4IH3, remapping_core_PQM_IH6IH5
+public get_remapping_scheme
 public initialize_remapping, end_remapping
 public remapEnableBoundaryExtrapolation, remapDisableBoundaryExtrapolation
 public setReconstructionType
@@ -427,6 +431,198 @@ subroutine remapping_core( CS, n0, h0, u0, n1, dx, u1 )
 
 end subroutine remapping_core
 
+!> Remaps column of values u0 on grid h0 to implied grid h1
+!! where the interfaces of h1 differ from those of h0 by dx.
+subroutine remapping_core_PCM( CS, n0, h0, u0, n1, dx, u1 )
+  type(remapping_CS), intent(in)    :: CS !< Remapping control structure
+  integer,            intent(in)    :: n0 !< Number of cells on source grid
+  real, dimension(:), intent(in)    :: h0 !< Cell widths on source grid
+  real, dimension(:), intent(in)    :: u0 !< Cell averages on source grid
+  integer,            intent(in)    :: n1 !< Number of cells on target grid
+  real, dimension(:), intent(in)    :: dx !< Change in interface positions
+  real, dimension(:), intent(out)   :: u1 !< Cell averages on target grid
+  ! Local variables
+  integer :: iMethod
+  real, dimension(CS%nk,2)           :: ppoly_r_E            !Edge value of polynomial
+  real, dimension(CS%nk,2)           :: ppoly_r_S            !Edge slope of polynomial
+  real, dimension(CS%nk,CS%degree+1) :: ppoly_r_coefficients !Coefficients of polynomial
+
+  ! Reset polynomial
+  ppoly_r_E(:,:) = 0.0
+  ppoly_r_S(:,:) = 0.0
+  ppoly_r_coefficients(:,:) = 0.0
+
+      call PCM_reconstruction( n0, u0, ppoly_r_E, ppoly_r_coefficients)
+      iMethod = INTEGRATION_PCM
+
+  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
+
+end subroutine remapping_core_PCM
+
+!> Remaps column of values u0 on grid h0 to implied grid h1
+!! where the interfaces of h1 differ from those of h0 by dx.
+subroutine remapping_core_PLM( CS, n0, h0, u0, n1, dx, u1 )
+  type(remapping_CS), intent(in)    :: CS !< Remapping control structure
+  integer,            intent(in)    :: n0 !< Number of cells on source grid
+  real, dimension(:), intent(in)    :: h0 !< Cell widths on source grid
+  real, dimension(:), intent(in)    :: u0 !< Cell averages on source grid
+  integer,            intent(in)    :: n1 !< Number of cells on target grid
+  real, dimension(:), intent(in)    :: dx !< Change in interface positions
+  real, dimension(:), intent(out)   :: u1 !< Cell averages on target grid
+  ! Local variables
+  integer :: iMethod
+  real, dimension(CS%nk,2)           :: ppoly_r_E            !Edge value of polynomial
+  real, dimension(CS%nk,2)           :: ppoly_r_S            !Edge slope of polynomial
+  real, dimension(CS%nk,CS%degree+1) :: ppoly_r_coefficients !Coefficients of polynomial
+
+  ! Reset polynomial
+  ppoly_r_E(:,:) = 0.0
+  ppoly_r_S(:,:) = 0.0
+  ppoly_r_coefficients(:,:) = 0.0
+
+  call PLM_reconstruction( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients )
+  if ( CS%boundary_extrapolation) then
+     call PLM_boundary_extrapolation( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients)
+  end if
+  iMethod = INTEGRATION_PLM
+
+  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
+
+end subroutine remapping_core_PLM
+
+!> Remaps column of values u0 on grid h0 to implied grid h1
+!! where the interfaces of h1 differ from those of h0 by dx.
+subroutine remapping_core_PPM_H4( CS, n0, h0, u0, n1, dx, u1 )
+  type(remapping_CS), intent(in)    :: CS !< Remapping control structure
+  integer,            intent(in)    :: n0 !< Number of cells on source grid
+  real, dimension(:), intent(in)    :: h0 !< Cell widths on source grid
+  real, dimension(:), intent(in)    :: u0 !< Cell averages on source grid
+  integer,            intent(in)    :: n1 !< Number of cells on target grid
+  real, dimension(:), intent(in)    :: dx !< Change in interface positions
+  real, dimension(:), intent(out)   :: u1 !< Cell averages on target grid
+  ! Local variables
+  integer :: iMethod
+  real, dimension(CS%nk,2)           :: ppoly_r_E            !Edge value of polynomial
+  real, dimension(CS%nk,2)           :: ppoly_r_S            !Edge slope of polynomial
+  real, dimension(CS%nk,CS%degree+1) :: ppoly_r_coefficients !Coefficients of polynomial
+  ! Reset polynomial
+  ppoly_r_E(:,:) = 0.0
+  ppoly_r_S(:,:) = 0.0
+  ppoly_r_coefficients(:,:) = 0.0
+
+      call edge_values_explicit_h4( n0, h0, u0, ppoly_r_E )
+      call PPM_reconstruction( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients )
+      if ( CS%boundary_extrapolation) then
+        call PPM_boundary_extrapolation( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients )
+      end if
+      iMethod = INTEGRATION_PPM
+
+  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
+
+end subroutine remapping_core_PPM_H4
+
+!> Remaps column of values u0 on grid h0 to implied grid h1
+!! where the interfaces of h1 differ from those of h0 by dx.
+subroutine remapping_core_PPM_IH4( CS, n0, h0, u0, n1, dx, u1 )
+  type(remapping_CS), intent(in)    :: CS !< Remapping control structure
+  integer,            intent(in)    :: n0 !< Number of cells on source grid
+  real, dimension(:), intent(in)    :: h0 !< Cell widths on source grid
+  real, dimension(:), intent(in)    :: u0 !< Cell averages on source grid
+  integer,            intent(in)    :: n1 !< Number of cells on target grid
+  real, dimension(:), intent(in)    :: dx !< Change in interface positions
+  real, dimension(:), intent(out)   :: u1 !< Cell averages on target grid
+  ! Local variables
+  integer :: iMethod
+  real, dimension(CS%nk,2)           :: ppoly_r_E            !Edge value of polynomial
+  real, dimension(CS%nk,2)           :: ppoly_r_S            !Edge slope of polynomial
+  real, dimension(CS%nk,CS%degree+1) :: ppoly_r_coefficients !Coefficients of polynomial
+
+  ! Reset polynomial
+  ppoly_r_E(:,:) = 0.0
+  ppoly_r_S(:,:) = 0.0
+  ppoly_r_coefficients(:,:) = 0.0
+
+      call edge_values_implicit_h4( n0, h0, u0, ppoly_r_E )
+      call PPM_reconstruction( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients )
+      if ( CS%boundary_extrapolation) then
+        call PPM_boundary_extrapolation( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients )
+      end if
+      iMethod = INTEGRATION_PPM
+
+  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
+
+end subroutine remapping_core_PPM_IH4
+
+!> Remaps column of values u0 on grid h0 to implied grid h1
+!! where the interfaces of h1 differ from those of h0 by dx.
+subroutine remapping_core_PQM_IH4IH3( CS, n0, h0, u0, n1, dx, u1 )
+  type(remapping_CS), intent(in)    :: CS !< Remapping control structure
+  integer,            intent(in)    :: n0 !< Number of cells on source grid
+  real, dimension(:), intent(in)    :: h0 !< Cell widths on source grid
+  real, dimension(:), intent(in)    :: u0 !< Cell averages on source grid
+  integer,            intent(in)    :: n1 !< Number of cells on target grid
+  real, dimension(:), intent(in)    :: dx !< Change in interface positions
+  real, dimension(:), intent(out)   :: u1 !< Cell averages on target grid
+  ! Local variables
+  integer :: iMethod
+  real, dimension(CS%nk,2)           :: ppoly_r_E            !Edge value of polynomial
+  real, dimension(CS%nk,2)           :: ppoly_r_S            !Edge slope of polynomial
+  real, dimension(CS%nk,CS%degree+1) :: ppoly_r_coefficients !Coefficients of polynomial
+  ! Reset polynomial
+  ppoly_r_E(:,:) = 0.0
+  ppoly_r_S(:,:) = 0.0
+  ppoly_r_coefficients(:,:) = 0.0
+
+      call edge_values_implicit_h4( n0, h0, u0, ppoly_r_E )
+      call edge_slopes_implicit_h3( n0, h0, u0, ppoly_r_S )
+      call PQM_reconstruction( n0, h0, u0, ppoly_r_E, ppoly_r_S, ppoly_r_coefficients )
+      if ( CS%boundary_extrapolation) then
+        call PQM_boundary_extrapolation_v1( n0, h0, u0, ppoly_r_E, ppoly_r_S, ppoly_r_coefficients )
+      end if
+      iMethod = INTEGRATION_PQM
+
+  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
+
+end subroutine remapping_core_PQM_IH4IH3
+
+!> Remaps column of values u0 on grid h0 to implied grid h1
+!! where the interfaces of h1 differ from those of h0 by dx.
+subroutine remapping_core_PQM_IH6IH5( CS, n0, h0, u0, n1, dx, u1 )
+  type(remapping_CS), intent(in)    :: CS !< Remapping control structure
+  integer,            intent(in)    :: n0 !< Number of cells on source grid
+  real, dimension(:), intent(in)    :: h0 !< Cell widths on source grid
+  real, dimension(:), intent(in)    :: u0 !< Cell averages on source grid
+  integer,            intent(in)    :: n1 !< Number of cells on target grid
+  real, dimension(:), intent(in)    :: dx !< Change in interface positions
+  real, dimension(:), intent(out)   :: u1 !< Cell averages on target grid
+  ! Local variables
+  integer :: iMethod
+  real, dimension(CS%nk,2)           :: ppoly_r_E            !Edge value of polynomial
+  real, dimension(CS%nk,2)           :: ppoly_r_S            !Edge slope of polynomial
+  real, dimension(CS%nk,CS%degree+1) :: ppoly_r_coefficients !Coefficients of polynomial
+  ! Reset polynomial
+  ppoly_r_E(:,:) = 0.0
+  ppoly_r_S(:,:) = 0.0
+  ppoly_r_coefficients(:,:) = 0.0
+
+      call edge_values_implicit_h6( n0, h0, u0, ppoly_r_E )
+      call edge_slopes_implicit_h5( n0, h0, u0, ppoly_r_S )
+      call PQM_reconstruction( n0, h0, u0, ppoly_r_E, ppoly_r_S, ppoly_r_coefficients )
+      if ( CS%boundary_extrapolation) then
+        call PQM_boundary_extrapolation_v1( n0, h0, u0, ppoly_r_E, ppoly_r_S, ppoly_r_coefficients )
+      end if
+      iMethod = INTEGRATION_PQM
+
+  call remapByDeltaZ( n0, h0, u0, ppoly_r_E, ppoly_r_coefficients, n1, dx, iMethod, u1 )
+! call remapByProjection( n0, h0, u0, CS%ppoly_r, n1, h1, iMethod, u1 )
+
+end subroutine remapping_core_PQM_IH6IH5
+
 
 !> Remaps column of values u0 on grid h0 to grid h1 by integrating
 !! over the projection of each h1 cell onto the h0 grid.
@@ -704,14 +900,14 @@ subroutine integrateReconOnInterval( n0, h0, u0, ppoly0_E, ppoly0_coefficients, 
           !uAve = evaluation_polynomial( ppoly0_coefficients(jL,:), 3, xi0 )
           uAve = (ppoly0_coefficients(jL,1)         &
                 + ppoly0_coefficients(jL,2) * xi0)  &
-               + ppoly0_coefficients(jL,3) * xi0**2
+               + ppoly0_coefficients(jL,3) * xi0*xi0
         case ( INTEGRATION_PQM )
           !uAve = evaluation_polynomial( ppoly0_coefficients(jL,:), 5, xi0 )
           uAve = (((ppoly0_coefficients(jL,1)          &
                + ppoly0_coefficients(jL,2) * xi0)    &
-               + ppoly0_coefficients(jL,3) * xi0**2) &
-               + ppoly0_coefficients(jL,4) * xi0**3) &
-               + ppoly0_coefficients(jL,5) * xi0**4
+               + ppoly0_coefficients(jL,3) * xi0*xi0) &
+               + ppoly0_coefficients(jL,4) * xi0*xi0*xi0) &
+               + ppoly0_coefficients(jL,5) * xi0*xi0*xi0*xi0
         case default
           call MOM_error( FATAL,'The selected integration method is invalid' )
       end select
@@ -778,21 +974,21 @@ subroutine integrateReconOnInterval( n0, h0, u0, ppoly0_E, ppoly0_coefficients, 
           q = h0(jL) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 1 )
               (ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)     &
-              +ppoly0_coefficients(jL,2)*(xi1**n2-xi0**n2)/real(n2) )
+              +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2) )
         case ( INTEGRATION_PPM )
           q = h0(jL) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 2 )
               ((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)    &
-               +ppoly0_coefficients(jL,2)*(xi1**n2-xi0**n2)/real(n2))   &
-              +ppoly0_coefficients(jL,3)*(xi1**n3-xi0**n3)/real(n3)) 
+               +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2))   &
+              +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3)) 
         case ( INTEGRATION_PQM )
           q = h0(jL) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 4 )
               ((((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)  &
-                 +ppoly0_coefficients(jL,2)*(xi1**n2-xi0**n2)/real(n2)) &
-                +ppoly0_coefficients(jL,3)*(xi1**n3-xi0**n3)/real(n3))  &
-               +ppoly0_coefficients(jL,4)*(xi1**n4-xi0**n4)/real(n4))   &
-              +ppoly0_coefficients(jL,5)*(xi1**n5-xi0**n5)/real(n5) )
+                 +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2)) &
+                +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3))  &
+               +ppoly0_coefficients(jL,4)*(xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0)/real(n4))   &
+              +ppoly0_coefficients(jL,5)*(xi1*xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0*xi0)/real(n5) )
         case default
           call MOM_error( FATAL,'The selected integration method is invalid' )
       end select
@@ -837,21 +1033,21 @@ subroutine integrateReconOnInterval( n0, h0, u0, ppoly0_E, ppoly0_coefficients, 
           q = q + h0(jL) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 1 )
               (ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)     &
-              +ppoly0_coefficients(jL,2)*(xi1**n2-xi0**n2)/real(n2) )
+              +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2) )
         case ( INTEGRATION_PPM )
           q = q + h0(jL) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 2 )
               ((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)    &
-               +ppoly0_coefficients(jL,2)*(xi1**n2-xi0**n2)/real(n2))   &
-              +ppoly0_coefficients(jL,3)*(xi1**n3-xi0**n3)/real(n3)) 
+               +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2))   &
+              +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3)) 
         case ( INTEGRATION_PQM )
           q = q + h0(jL) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jL,:), 4 )
               ((((ppoly0_coefficients(jL,1)*(xi1-xi0)/real(n1)  &
-                 +ppoly0_coefficients(jL,2)*(xi1**n2-xi0**n2)/real(n2)) &
-                +ppoly0_coefficients(jL,3)*(xi1**n3-xi0**n3)/real(n3))  &
-               +ppoly0_coefficients(jL,4)*(xi1**n4-xi0**n4)/real(n4))   &
-              +ppoly0_coefficients(jL,5)*(xi1**n5-xi0**n5)/real(n5) )
+                 +ppoly0_coefficients(jL,2)*(xi1*xi1-xi0*xi0)/real(n2)) &
+                +ppoly0_coefficients(jL,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3))  &
+               +ppoly0_coefficients(jL,4)*(xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0)/real(n4))   &
+              +ppoly0_coefficients(jL,5)*(xi1*xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0*xi0)/real(n5) )
         case default
           call MOM_error( FATAL, 'The selected integration method is invalid' )
       end select
@@ -896,21 +1092,21 @@ subroutine integrateReconOnInterval( n0, h0, u0, ppoly0_E, ppoly0_coefficients, 
           q = q + h0(jR) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jR,:), 1 )
               (ppoly0_coefficients(jR,1)*(xi1-xi0)/real(n1)     &
-              +ppoly0_coefficients(jR,2)*(xi1**n2-xi0**n2)/real(n2) )
+              +ppoly0_coefficients(jR,2)*(xi1*xi1-xi0*xi0)/real(n2) )
         case ( INTEGRATION_PPM )
           q = q + h0(jR) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jR,:), 2 )
               ((ppoly0_coefficients(jR,1)*(xi1-xi0)/real(n1)    &
-               +ppoly0_coefficients(jR,2)*(xi1**n2-xi0**n2)/real(n2))   &
-              +ppoly0_coefficients(jR,3)*(xi1**n3-xi0**n3)/real(n3)) 
+               +ppoly0_coefficients(jR,2)*(xi1*xi1-xi0*xi0)/real(n2))   &
+              +ppoly0_coefficients(jR,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3)) 
         case ( INTEGRATION_PQM )
           q = q + h0(jR) * &
               !integration_polynomial( xi0, xi1, ppoly0_coefficients(jR,:), 4 )
               ((((ppoly0_coefficients(jR,1)*(xi1-xi0)/real(n1)  &
-                 +ppoly0_coefficients(jR,2)*(xi1**n2-xi0**n2)/real(n2)) &
-                +ppoly0_coefficients(jR,3)*(xi1**n3-xi0**n3)/real(n3))  &
-               +ppoly0_coefficients(jR,4)*(xi1**n4-xi0**n4)/real(n4))   &
-              +ppoly0_coefficients(jR,5)*(xi1**n5-xi0**n5)/real(n5) )
+                 +ppoly0_coefficients(jR,2)*(xi1*xi1-xi0*xi0)/real(n2)) &
+                +ppoly0_coefficients(jR,3)*(xi1*xi1*xi1-xi0*xi0*xi0)/real(n3))  &
+               +ppoly0_coefficients(jR,4)*(xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0)/real(n4))   &
+              +ppoly0_coefficients(jR,5)*(xi1*xi1*xi1*xi1*xi1-xi0*xi0*xi0*xi0*xi0)/real(n5) )
         case default
           call MOM_error( FATAL,'The selected integration method is invalid' )
       end select
@@ -1036,6 +1232,12 @@ subroutine setReconstructionType(string,CS)
   CS%degree = degree
 
 end subroutine setReconstructionType
+
+function get_remapping_scheme(CS)
+  integer :: get_remapping_scheme
+  type(remapping_CS), intent(in) :: CS !< Remapping control structure
+  get_remapping_scheme = CS%remapping_scheme
+end function get_remapping_scheme
 
 !> Enables extrapolation in boundary cells
 subroutine remapEnableBoundaryExtrapolation(CS)

@@ -48,6 +48,10 @@ use MOM_remapping, only : initialize_remapping, remapping_core, end_remapping
 use MOM_remapping, only : remappingSchemesDoc, remappingDefaultScheme
 use MOM_remapping, only : remapDisableBoundaryExtrapolation, remapEnableBoundaryExtrapolation
 use MOM_remapping, only : remapping_CS, dzFromH1H2
+use MOM_remapping, only : remapping_core_PCM, remapping_core_PLM
+use MOM_remapping, only : remapping_core_PPM_H4, remapping_core_PPM_IH4
+use MOM_remapping, only : remapping_core_PQM_IH4IH3, remapping_core_PQM_IH6IH5
+use MOM_remapping, only : get_remapping_scheme
 use MOM_tracer_registry, only : tracer_registry_type
 use regrid_defs, only : PRESSURE_RECONSTRUCTION_PLM
 !use regrid_consts, only : coordinateMode, DEFAULT_COORDINATE_MODE
@@ -416,6 +420,14 @@ subroutine remapping_main( CS, G, h, dxInterface, Reg, u, v, debug )
   real, dimension(G%ke+1) :: dx
   real, dimension(G%ke) :: h1, u_column
   logical :: show_call_tree
+  integer :: remapping_scheme
+! The following are private parameter constants
+integer, parameter  :: REMAPPING_PCM        = 0 !< O(h^1) remapping scheme
+integer, parameter  :: REMAPPING_PLM        = 1 !< O(h^2) remapping scheme
+integer, parameter  :: REMAPPING_PPM_H4     = 2 !< O(h^3) remapping scheme
+integer, parameter  :: REMAPPING_PPM_IH4    = 3 !< O(h^3) remapping scheme
+integer, parameter  :: REMAPPING_PQM_IH4IH3 = 4 !< O(h^4) remapping scheme
+integer, parameter  :: REMAPPING_PQM_IH6IH5 = 5 !< O(h^5) remapping scheme
 
   show_call_tree = .false.
   if (present(debug)) show_call_tree = debug
@@ -428,11 +440,23 @@ subroutine remapping_main( CS, G, h, dxInterface, Reg, u, v, debug )
     ntr = 0
   endif
 
+  remapping_scheme = get_remapping_scheme(CS)
+  if (nz<=1) then
+    remapping_scheme = REMAPPING_PCM
+  elseif (nz<=3) then
+    remapping_scheme = min( remapping_scheme, REMAPPING_PLM )
+  elseif (nz<=4) then
+    remapping_scheme = min( remapping_scheme, REMAPPING_PPM_H4 )
+  endif
+
   ! Remap tracer
 !$OMP parallel default(none) shared(G,h,dxInterface,CS,nz,Reg,u,v,ntr,show_call_tree) &
 !$OMP                       private(h1,dx,u_column)
   if (ntr>0) then
     if (show_call_tree) call callTree_waypoint("remapping tracers (remapping_main)")
+  
+    select case ( remapping_scheme )
+      case ( REMAPPING_PCM )
 !$OMP do
     do j = G%jsc,G%jec
       do i = G%isc,G%iec
@@ -441,12 +465,92 @@ subroutine remapping_main( CS, G, h, dxInterface, Reg, u, v, debug )
           h1(:) = h(i,j,:)
           dx(:) = dxInterface(i,j,:)
           do m=1,ntr ! For each tracer ! NOTE THAT THIS LOOP SHOULD BE OUTSIDE -AJA
-            call remapping_core(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
+            call remapping_core_PCM(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
             Reg%Tr(m)%t(i,j,:) = u_column(:)
           enddo
         endif
       enddo
     enddo
+      case ( REMAPPING_PLM )
+!$OMP do
+    do j = G%jsc,G%jec
+      do i = G%isc,G%iec
+        if (G%mask2dT(i,j)>0.) then
+          ! Build the start and final grids
+          h1(:) = h(i,j,:)
+          dx(:) = dxInterface(i,j,:)
+          do m=1,ntr ! For each tracer ! NOTE THAT THIS LOOP SHOULD BE OUTSIDE -AJA
+            call remapping_core_PLM(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
+            Reg%Tr(m)%t(i,j,:) = u_column(:)
+          enddo
+        endif
+      enddo
+    enddo
+      case ( REMAPPING_PPM_H4 )
+!$OMP do
+    do j = G%jsc,G%jec
+      do i = G%isc,G%iec
+        if (G%mask2dT(i,j)>0.) then
+          ! Build the start and final grids
+          h1(:) = h(i,j,:)
+          dx(:) = dxInterface(i,j,:)
+          do m=1,ntr ! For each tracer ! NOTE THAT THIS LOOP SHOULD BE OUTSIDE -AJA
+            call remapping_core_PPM_H4(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
+            Reg%Tr(m)%t(i,j,:) = u_column(:)
+          enddo
+        endif
+      enddo
+    enddo
+      case ( REMAPPING_PPM_IH4 )
+!$OMP do
+    do j = G%jsc,G%jec
+      do i = G%isc,G%iec
+        if (G%mask2dT(i,j)>0.) then
+          ! Build the start and final grids
+          h1(:) = h(i,j,:)
+          dx(:) = dxInterface(i,j,:)
+          do m=1,ntr ! For each tracer ! NOTE THAT THIS LOOP SHOULD BE OUTSIDE -AJA
+            call remapping_core_PPM_IH4(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
+            Reg%Tr(m)%t(i,j,:) = u_column(:)
+          enddo
+        endif
+      enddo
+    enddo
+      case ( REMAPPING_PQM_IH4IH3 )
+!$OMP do
+    do j = G%jsc,G%jec
+      do i = G%isc,G%iec
+        if (G%mask2dT(i,j)>0.) then
+          ! Build the start and final grids
+          h1(:) = h(i,j,:)
+          dx(:) = dxInterface(i,j,:)
+          do m=1,ntr ! For each tracer ! NOTE THAT THIS LOOP SHOULD BE OUTSIDE -AJA
+            call remapping_core_PQM_IH4IH3(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
+            Reg%Tr(m)%t(i,j,:) = u_column(:)
+          enddo
+        endif
+      enddo
+    enddo
+      case ( REMAPPING_PQM_IH6IH5 )
+!$OMP do
+    do j = G%jsc,G%jec
+      do i = G%isc,G%iec
+        if (G%mask2dT(i,j)>0.) then
+          ! Build the start and final grids
+          h1(:) = h(i,j,:)
+          dx(:) = dxInterface(i,j,:)
+          do m=1,ntr ! For each tracer ! NOTE THAT THIS LOOP SHOULD BE OUTSIDE -AJA
+            call remapping_core_PQM_IH6IH5(CS, nz, h1, Reg%Tr(m)%t(i,j,:), nz, dx, u_column)
+            Reg%Tr(m)%t(i,j,:) = u_column(:)
+          enddo
+        endif
+      enddo
+    enddo
+      case default
+      call MOM_error( FATAL, 'MOM_ALE, remapping_main: '//&
+           'The selected remapping scheme is invalid' )
+    end select    
+
   endif
 
   if (show_call_tree) call callTree_waypoint("tracers remapped (remapping_main)")
