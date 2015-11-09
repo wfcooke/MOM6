@@ -479,8 +479,10 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
         !        with the atmospheric treatment of water vapor. Using a latent heat of 
         !        vaporization that varies as function of temperature will result in 
         !        non-conservation of heat with respect to the atmosphere in coupled mode.
-        fluxes%latent(i,j)           = fluxes%latent(i,j) - (IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36)))
-        fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * (IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36)))
+        fluxes%latent(i,j)           = fluxes%latent(i,j) - &
+                                       min((IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36))),CS%latent_heat_vapor)
+        fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * &
+                                       min((IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36))),CS%latent_heat_vapor)
       else
         fluxes%latent(i,j)           = fluxes%latent(i,j) - IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
         fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
