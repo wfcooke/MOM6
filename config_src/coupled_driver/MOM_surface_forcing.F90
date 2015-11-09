@@ -101,6 +101,8 @@ type, public :: surface_forcing_CS ; private
   real :: area_surf = -1.0      ! total ocean surface area (m^2)
   real :: latent_heat_fusion    ! latent heat of fusion (J/kg)
   real :: latent_heat_vapor     ! latent heat of vaporization (J/kg)
+  logical :: lhv_varies_with_temp ! If false, LHV used for flux calculations is
+                                  ! a fixed constant.
 
   real :: max_p_surf            ! maximum surface pressure that can be
                                 ! exerted by the atmosphere and floating sea-ice,
@@ -465,8 +467,24 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
       fluxes%latent_frunoff_diag(i,j) = -G%mask2dT(i,j) * IOB%calving(i-i0,j-j0)*CS%latent_heat_fusion
     endif
     if (ASSOCIATED(IOB%q_flux)) then
-      fluxes%latent(i,j)           = fluxes%latent(i,j) - IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
-      fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
+      if (CS%lhv_varies_with_temp) then
+        ! The code below allows for a latent heat of vaporization that scales with temperature.
+        ! The full-form equation is:
+        !
+        !     lhv = 1000. * (2500.8 - T*2.36 + T*T*0.0016 - T*T*T*0.00006)   ! J kg-1
+        !
+        ! However, the linear approximation is valid up to about 40 degC.
+        !
+        ! Note:  The use a of a constant latent heat of vaporization at 0C is consistent
+        !        with the atmospheric treatment of water vapor. Using a latent heat of 
+        !        vaporization that varies as function of temperature will result in 
+        !        non-conservation of heat with respect to the atmosphere in coupled mode.
+        fluxes%latent(i,j)           = fluxes%latent(i,j) - (IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36)))
+        fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * (IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36)))
+      else
+        fluxes%latent(i,j)           = fluxes%latent(i,j) - IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
+        fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
+      endif
     endif
 
     fluxes%latent(i,j) = G%mask2dT(i,j) * fluxes%latent(i,j)
@@ -834,6 +852,10 @@ subroutine surface_forcing_init(Time, G, param_file, diag, CS, restore_salt)
                  "The latent heat of fusion.", units="J/kg", default=hlf)
   call get_param(param_file, mod, "LATENT_HEAT_VAPORIZATION", CS%latent_heat_vapor, &
                  "The latent heat of fusion.", units="J/kg", default=hlv)
+  call get_param(param_file, mod, "LHV_VARIES_WITH_TEMP", CS%lhv_varies_with_temp, &
+                 "If false, the latent heat of vaporization used in flux \n"//&
+                 "calculations is a fixed constant defined by the parameter \n"//&
+                 "LATENT_HEAT_VAPORIZATION.", default =.false.)
   call get_param(param_file, mod, "MAX_P_SURF", CS%max_p_surf, &
                  "The maximum surface pressure that can be exerted by the \n"//&
                  "atmosphere and floating sea-ice or ice shelves. This is \n"//&
