@@ -484,9 +484,9 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
         !        with the atmospheric treatment of water vapor. 
         lhv = calculate_lhv(state%SST(i,j),state%SSS(i,j))
         fluxes%latent(i,j)           = fluxes%latent(i,j) - &
-                                       min((IOB%q_flux(i-i0,j-j0)*lhv),CS%latent_heat_vapor)
+                                       (IOB%q_flux(i-i0,j-j0)*min(lhv,CS%latent_heat_vapor))
         fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * &
-                                       min((IOB%q_flux(i-i0,j-j0)*lhv),CS%latent_heat_vapor)
+                                       (IOB%q_flux(i-i0,j-j0)*min(lhv,CS%latent_heat_vapor))
       else
         fluxes%latent(i,j)           = fluxes%latent(i,j) - IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
         fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
