@@ -210,6 +210,14 @@ integer :: id_clock_forcing
 
 contains
 
+real function calculate_lhv(t,s) result(lhv)
+  real,                      intent(in) :: t         ! SST
+  real,                      intent(in) :: s         ! SSS
+  ! Based on Mostafa et al. 2010: Thermophysical properties of seawater: a review of existing
+  !                               correlations and data, desalination and water treatment
+  lhv = (2500.8 - t*(2.444) - 2.501*(s) + t*s*(2.45e-3))*1000.  ! J/kg
+end function calculate_lhv
+
 subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, restore_salt)
   type(ice_ocean_boundary_type), intent(in), target :: IOB
   type(forcing),              intent(inout)         :: fluxes
@@ -277,6 +285,8 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
   real :: delta_sss           ! temporary storage for sss diff from restoring value
 
   real :: C_p                 ! heat capacity of seawater ( J/(K kg) )
+  real :: lhv                 ! local latent heat of vaporization (J/kg) that varies
+                              ! as a function of temperature and salinity
 
   call cpu_clock_begin(id_clock_forcing)
 
@@ -469,20 +479,14 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
     if (ASSOCIATED(IOB%q_flux)) then
       if (CS%lhv_varies_with_temp) then
         ! The code below allows for a latent heat of vaporization that scales with temperature.
-        ! The full-form equation is:
-        !
-        !     lhv = 1000. * (2500.8 - T*2.36 + T*T*0.0016 - T*T*T*0.00006)   ! J kg-1
-        !
-        ! However, the linear approximation is valid up to about 40 degC.
         !
         ! Note:  The use a of a constant latent heat of vaporization at 0C is consistent
-        !        with the atmospheric treatment of water vapor. Using a latent heat of 
-        !        vaporization that varies as function of temperature will result in 
-        !        non-conservation of heat with respect to the atmosphere in coupled mode.
+        !        with the atmospheric treatment of water vapor. 
+        lhv = calculate_lhv(state%SST(i,j),state%SSS(i,j))
         fluxes%latent(i,j)           = fluxes%latent(i,j) - &
-                                       min((IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36))),CS%latent_heat_vapor)
+                                       min((IOB%q_flux(i-i0,j-j0)*lhv),CS%latent_heat_vapor)
         fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * &
-                                       min((IOB%q_flux(i-i0,j-j0)*(1000.*(2500.8 - state%SST(i,j)*2.36))),CS%latent_heat_vapor)
+                                       min((IOB%q_flux(i-i0,j-j0)*lhv),CS%latent_heat_vapor)
       else
         fluxes%latent(i,j)           = fluxes%latent(i,j) - IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
         fluxes%latent_evap_diag(i,j) = -G%mask2dT(i,j) * IOB%q_flux(i-i0,j-j0)*CS%latent_heat_vapor
