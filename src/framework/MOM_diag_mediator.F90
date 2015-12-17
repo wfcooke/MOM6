@@ -161,10 +161,13 @@ type, public :: diag_ctrl
   ! Keep track of which remapping is needed for diagnostic output
   logical :: do_z_remapping_on_u, do_z_remapping_on_v, do_z_remapping_on_T
   logical :: remapping_initialized
+  logical :: apply_3d_diag_mask_for_zstar_only 
 
   ! Pointer to H and G for remapping
   real, dimension(:,:,:), pointer :: h => null()
   type(ocean_grid_type), pointer :: G => null()
+
+  real :: masking_thickness = 0.0
 
 #if defined(DEBUG) || defined(__DO_SAFETY_CHECKS__)
   ! Keep a copy of h so that we know whether it has changed. If it has then
@@ -194,6 +197,7 @@ subroutine set_axes_info(G, param_file, diag_cs, set_vertical)
   character(len=80) :: grid_config, units_temp
   character(len=200) :: inputdir, string, filename, varname, dimname
 
+
 ! This include declares and sets the variable "version".
 #include "version_variable.h"
   character(len=40)  :: mod  = "MOM_diag_mediator" ! This module's name.
@@ -211,6 +215,8 @@ subroutine set_axes_info(G, param_file, diag_cs, set_vertical)
                  "\t spherical - a spherical grid \n"//&
                  "\t mercator  - a Mercator grid", fail_if_missing=.true.)
 
+
+     
   G%x_axis_units = "degrees_E"
   G%y_axis_units = "degrees_N"
   if (index(lowercase(trim(grid_config)),"cartesian") > 0) then
@@ -279,8 +285,7 @@ subroutine set_axes_info(G, param_file, diag_cs, set_vertical)
          "Found '"//trim(string)//"'")
     else
       if (string(6:6)=='.' .or. string(6:6)=='/') then
-        inputdir = "."
-        filename = trim(extractWord(trim(string(6:200)), 1))
+        filename = trim(inputdir) // trim(extractWord(trim(string(1:200)), 1))
       else
         call get_param(param_file, mod, "INPUTDIR", inputdir, default=".")
         inputdir = slasher(inputdir)
@@ -650,7 +655,14 @@ subroutine post_data_3d(diag_field_id, field, diag_cs, is_static, mask)
       endif
       deallocate(remapped_field)
     else
-      call post_data_3d_low(diag, field, diag_cs, is_static, mask)
+   ! Should additionally test to make sure this diagnostic is a primary
+   ! variable, as opposed to a remapped or cmor diagnostic. The mask should
+   ! only be used for primary diagnostics right now.
+      if (diag_cs%apply_3d_diag_mask_for_zstar_only ) then
+        call post_data_3d_low(diag, field, diag_cs, is_static, diag%mask3d)	
+      else
+        call post_data_3d_low(diag, field, diag_cs, is_static, mask)
+      endif
     endif
     diag => diag%next
   enddo
@@ -1364,17 +1376,6 @@ function register_static_field(module_name, field_name, axes, &
     endif
   endif
 
-  ! Document diagnostics in list of available diagnostics
-  if (is_root_pe() .and. doc_unit > 0) then
-    call log_available_diag(associated(diag), module_name, field_name, &
-                            long_name, units, standard_name)
-    if (present(cmor_field_name)) then
-      call log_available_diag(associated(cmor_diag), module_name, cmor_field_name, &
-                              posted_cmor_long_name, posted_cmor_units, &
-                              posted_cmor_standard_name)
-    endif
-  endif
-
   register_static_field = primary_id
 
 end function register_static_field
@@ -1511,6 +1512,7 @@ subroutine diag_mediator_init(G, param_file, diag_cs, err_msg)
   character(len=8)   :: this_pe
   character(len=240) :: doc_file, doc_file_dflt
   character(len=40)  :: mod  = "MOM_diag_mediator" ! This module's name.
+  character(len=80) :: regridding_coordinate_mode
 
   call diag_manager_init(err_msg=err_msg)
 
@@ -1575,6 +1577,22 @@ subroutine diag_mediator_init(G, param_file, diag_cs, err_msg)
     endif
   endif
 
+  call get_param(param_file,mod,"APPLY_DIAGNOSTIC_MASK_FOR_ZSTAR",diag_cs%apply_3d_diag_mask_for_zstar_only, &
+                 "This option is used in ZSTAR mode only to apply a 3-d mask based on a pre-set \n"//&
+                 "minimum thickness",fail_if_missing=.false.,default=.false.)
+ 
+  if (diag_cs%apply_3d_diag_mask_for_zstar_only) then
+     call get_param(param_file,'MOM_ALE',"REGRIDDING_COORDINATE_MODE",regridding_coordinate_mode)
+     if (regridding_coordinate_mode /= "Z*") then
+       call MOM_error(FATAL,"set_axis_info: "//&
+         "REGRIDDING MODE is NOT Z* but APPLY_DIAGNOSTIC_MASK_FOR_ZSTAR is True ")
+     endif
+     call get_param(param_file,mod,"MIN_THICKNESS_FOR_DIAG",diag_cs%masking_thickness, &
+                 "Minimum thickness for diagnostic output only if APPLY_DIAGNOSTIC_MASK_FOR_ZSTAR\n"//&
+                 "is true",fail_if_missing=.false.,default=1.e-2)
+     
+  endif
+
 end subroutine diag_mediator_init
 
 subroutine diag_set_thickness_ptr(h, diag_cs)
@@ -1596,7 +1614,8 @@ subroutine diag_masks_set(G, missing_value, diag_cs)
   real,                          intent(in) :: missing_value
   type(diag_ctrl),          pointer    :: diag_cs
   ! Local variables
-  integer :: k
+  integer :: i,j,k
+  real :: zinter(G%ks:G%ke+1)
 
   diag_cs%mask2dT => G%mask2dT
   diag_cs%mask2dBu=> G%mask2dBu
@@ -1612,6 +1631,23 @@ subroutine diag_masks_set(G, missing_value, diag_cs)
     diag_cs%mask3dCuL(:,:,k) = diag_cs%mask2dCu(:,:)
     diag_cs%mask3dCvL(:,:,k) = diag_cs%mask2dCv(:,:)
   enddo
+
+  if (diag_cs%apply_3d_diag_mask_for_zstar_only) then
+     zinter(1:G%ke+1) = G%GV%sInterface(1:G%ke+1)
+     do k = 1,G%ke
+        do j = G%jsc,G%jec
+          do i = G%isc,G%iec
+             if (zinter(k) > G%bathyT(i,j)) then
+                diag_cs%mask3dTL(i,j,k) = 0.
+                diag_cs%mask3dBuL(i,j,k) = 0.
+                diag_cs%mask3dCuL(i,j,k) = 0.
+                diag_cs%mask3dCvL(i,j,k) = 0.
+             endif
+          enddo
+       enddo
+     enddo
+  endif
+     
   allocate(diag_cs%mask3dTi(G%isd:G%ied,G%jsd:G%jed,1:G%ke+1))
   allocate(diag_cs%mask3dBui(G%IsdB:G%IedB,G%JsdB:G%JedB,1:G%ke+1))
   allocate(diag_cs%mask3dCui(G%IsdB:G%IedB,G%jsd:G%jed,1:G%ke+1))
@@ -1622,6 +1658,21 @@ subroutine diag_masks_set(G, missing_value, diag_cs)
     diag_cs%mask3dCui(:,:,k) = diag_cs%mask2dCu(:,:)
     diag_cs%mask3dCvi(:,:,k) = diag_cs%mask2dCv(:,:)
   enddo
+
+  if (diag_cs%apply_3d_diag_mask_for_zstar_only) then
+     do k = 1,G%ke
+        do j = G%jsc,G%jec
+          do i = G%isc,G%iec
+             if (zinter(k+1) < G%bathyT(i,j)) then
+                diag_cs%mask3dTi(i,j,k) = 0.
+                diag_cs%mask3dBui(i,j,k) = 0.
+                diag_cs%mask3dCui(i,j,k) = 0.
+                diag_cs%mask3dCvi(i,j,k) = 0.
+             endif
+          enddo
+       enddo
+     enddo
+  endif
 
   diag_cs%missing_value = missing_value
 

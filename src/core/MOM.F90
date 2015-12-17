@@ -1750,6 +1750,7 @@ subroutine initialize_MOM(Time, param_file, dirs, CS, Time_in)
   call cpu_clock_end(id_clock_MOM_init)
   call callTree_waypoint("returned from MOM_initialize_state() (initialize_MOM)")
 
+
   if (remap_init_conds(CS%ALE_CSp) .and. .not. query_initialized(CS%h,"h",CS%restart_CSp)) then
     ! This block is controlled by the ALE parameter REMAP_AFTER_INITIALIZATION.
     ! \todo This block exists for legacy reasons and we should phase it out of
@@ -1771,18 +1772,20 @@ subroutine initialize_MOM(Time, param_file, dirs, CS, Time_in)
   endif
   if ( CS%use_ALE_algorithm ) call ALE_updateVerticalGridType( CS%ALE_CSp, G%GV )
 
-  ! Initialize the diagnostics mask arrays.
-  ! This step has to be done after call to MOM_initialize_state
-  ! and before MOM_diagnostics_init
-  call diag_masks_set(G, CS%missing, diag)
 
   ! Set up a pointers h within diag mediator control structure,
   ! this needs to occur _after_ CS%h has been allocated.
   call diag_set_thickness_ptr(CS%h, diag)
 
+
   ! This call sets up the diagnostic axes. These are needed,
   ! e.g. to generate the target grids below.
   call set_axes_info(G, param_file, diag)
+
+  ! Initialize the diagnostics mask arrays.
+  ! This step has to be done after call to MOM_initialize_state
+  ! and before MOM_diagnostics_init
+  call diag_masks_set(G, CS%missing, diag)
 
   ! Whenever thickness changes let the diag manager know, target grids
   ! for vertical remapping may need to be regenerated. This needs to
