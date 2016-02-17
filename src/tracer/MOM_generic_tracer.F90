@@ -362,7 +362,7 @@ contains
                                 src_var_record = g_tracer%src_var_record,                  &
                                 src_var_gridspec = g_tracer%src_var_gridspec               )
 
-       else !Do it old way if the tracer is not registered to start from a specific source file.  
+      else !Do it old way if the tracer is not registered to start from a specific source file.  
             !This path should be deprecated if all generic tracers are required to start from specified sources.
         if (len_trim(CS%IC_file) > 0) then
         !  Read the tracer concentrations from a netcdf file.
@@ -386,9 +386,10 @@ contains
                   " for tracer "//trim(g_tracer_name))
             call read_data(CS%IC_file, trim(g_tracer_name), tr_ptr, domain=G%Domain%mpp_domain)
           endif
-        else
+        elseif(g_tracer%requires_restart ) then 
           call MOM_error(FATAL,"initialize_MOM_generic_tracer: "//&
-                  "check Generic Tracer IC filename "//trim(CS%IC_file)//".")
+                               "generic tracer "//trim(g_tracer_name)//" requires restart but could not! "//&
+                               "check Generic Tracer IC filename "//trim(CS%IC_file)//".")
         endif
 
        endif
