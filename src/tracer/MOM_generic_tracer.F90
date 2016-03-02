@@ -371,6 +371,15 @@ contains
             endif
          enddo; enddo ; enddo
 
+         !jgj: Reset CASED to 0 below K=1 
+         if(trim(g_tracer_name) .eq. 'cased') then
+            do k=2,nk ; do j=jsc,jec ; do i=isc,iec
+               if(tr_ptr(i,j,k) .ne. CS%tracer_land_val) then
+                 tr_ptr(i,j,k) = 0.0
+               endif
+            enddo; enddo ; enddo
+         endif
+
        else !Do it old way if the tracer is not registered to start from a specific source file.  
             !This path should be deprecated if all generic tracers are required to start from specified sources.
         if (len_trim(CS%IC_file) > 0) then
