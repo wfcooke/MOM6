@@ -311,7 +311,7 @@ type, public :: ice_shelf_CS ; private
                                   !       used, the southwest nodes of the southwest tiles will not
                                   !       be included in the 
 
-
+  logical :: apply_frazil_mass_flux
   logical :: switch_var ! for debdugging - a switch to ensure some event happens only once
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -457,7 +457,7 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
   ! Variables used in iterating for wB_flux.
   real :: wB_flux_new, DwB, dDwB_dwB_in
   real :: I_Gam_T, I_Gam_S, dG_dwB, iDens
-  real :: u_at_h, v_at_h, Isqrt2
+  real :: u_at_h, v_at_h, Isqrt2, fraz
   logical :: Sb_min_set, Sb_max_set
   character(4) :: stepnum
   character(2) :: procnum
@@ -692,6 +692,42 @@ subroutine shelf_calc_flux(state, fluxes, Time, time_step, CS)
     call cpu_clock_end(id_clock_pass)
   endif
   
+
+!   if (CS%update_shelf_mass_from_melt) then
+!      do j=js,je
+!         do i=is,ie
+!            if (CS%mass_shelf(i,j) .gt. 0.0) then
+!               CS%mass_shelf(i,j) = CS%mass_shelf(i,j) - CS%lprec(i,j)*CS%time_step*CS%flux_factor
+!               fraz = state%frazil(i,j)/CS%Lat_fusion
+!               CS%mass_shelf(i,j) = CS%mass_shelf(i,j) + fraz
+!               CS%mass_shelf(i,j) = max(CS%mass_shelf(i,j), CS%min_shelf_thickness*CS%density_ice)
+!               CS%mass_shelf(i,j) = min(CS%mass_shelf(i,j), (G%bathyT(i,j)-1.0e-12)*CS%density_ice*CS%density_ice/CS%density_ocean_avg)           
+!               CS%h_shelf(i,j) =  CS%mass_shelf(i,j) / CS%density_ice
+!            endif
+!         enddo
+!      enddo
+!      call pass_var(CS%mass_shelf, G%domain)
+!      call pass_var(CS%h_shelf, G%domain)
+
+!   endif
+
+!   if (CS%update_shelf_mass_from_refreeze_only) then
+!      do j=js,je
+!         do i=is,ie
+!            if (CS%mass_shelf(i,j) .gt. 0.0) then
+!               fraz = state%frazil(i,j)/CS%Lat_fusion
+!               CS%mass_shelf(i,j) = CS%mass_shelf(i,j) + fraz
+!               CS%mass_shelf(i,j) = max(CS%mass_shelf(i,j), CS%min_shelf_thickness*CS%density_ice)
+!               CS%mass_shelf(i,j) = min(CS%mass_shelf(i,j), (G%bathyT(i,j)-1.0e-12)*CS%density_ice*CS%density_ice/CS%density_ocean_avg)           
+!               CS%h_shelf(i,j) =  CS%mass_shelf(i,j) / CS%density_ice
+!            endif
+!         enddo
+!      enddo
+!      call pass_var(CS%mass_shelf, G%domain)
+!      call pass_var(CS%h_shelf, G%domain)
+
+!   endif
+     
   call add_shelf_flux(G, CS, state, fluxes)
 
   ! now the thermodynamic data is passed on... time to update the ice dynamic quantities
@@ -779,11 +815,16 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   real :: asu1, asu2    ! Ocean areas covered by ice shelves at neighboring u-
   real :: asv1, asv2    ! and v-points, in m2.
   real :: fraz          ! refreezing rate in kg m-2 s-1
+  real :: iDens
+  real, allocatable, dimension(:,:) :: tmp2d
+
   integer :: i, j, is, ie, js, je, isd, ied, jsd, jed
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec
   isd = G%isd ; jsd = G%jsd ; ied = G%ied ; jed = G%jed
 
-  Irho0 = 1.0 / G%GV%Rho0
+
+  iDens = 1.0/CS%density_ocean_avg
+  Irho0 = 1.0 / G%Gv%Rho0
   ! Determine ustar and the square magnitude of the velocity in the
   ! bottom boundary layer. Together these give the TKE source and
   ! vertical decay scale.
@@ -799,7 +840,7 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
         fluxes%frac_shelf_u(I,j) = ((CS%area_shelf_h(i,j) + CS%area_shelf_h(i+1,j)) / &
                                     (G%areaT(i,j) + G%areaT(i+1,j)))
       fluxes%rigidity_ice_u(I,j) = (CS%kv_ice / CS%density_ice) * &
-                                    min(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
+                                    max(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
     enddo ; enddo
     do j=jsd,jed-1 ; do i=isd,ied ! ### change stride order; j->jed-1?
     !do i=isd,ied ; do J=isd,jed-1 
@@ -815,14 +856,18 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
     ! This is needed because rigidity is potentially modified in the coupler. Reset
     ! in the ice shelf cavity: MJH
     do j=isd,jed ; do i=isd,ied-1 ! changed stride
+      if (CS%mass_shelf(i,j) > 0.) &
       fluxes%rigidity_ice_u(I,j) = (CS%kv_ice / CS%density_ice) * &
-                    min(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
+                    max(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
     enddo ; enddo
   
     do j=jsd,jed-1 ; do i=isd,ied ! changed stride
+      if (CS%mass_shelf(i,j) > 0.) &
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
                     max(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
+    call pass_vector(fluxes%rigidity_ice_u, fluxes%rigidity_ice_v, G%domain, TO_ALL, CGRID_NE)
+
   endif
 
   if (CS%debug) then
@@ -876,14 +921,22 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
         fluxes%evap(i,j) = frac_area*CS%lprec(i,j)*CS%flux_factor
       endif
 
+      fluxes%ustar(i,j)=MAX(CS%ustar_bg,fluxes%ustar(i,j)*CS%flux_factor)
+
       ! Add frazil formation diagnosed by the ocean model (J m-2) in the
       ! form of surface layer evaporation (kg m-2 s-1). Update lprec in the
       ! control structure for diagnostic purposes.
 
-      fraz= state%frazil(i,j) / CS%time_step / CS%Lat_fusion
-      fluxes%evap(i,j) = fluxes%evap(i,j) - fraz
-      CS%lprec(i,j)=CS%lprec(i,j) - fraz  
+      fraz = state%frazil(i,j) / CS%time_step / CS%Lat_fusion
 
+
+      if (CS%apply_frazil_mass_flux .and. (iDens*state%ocean_mass(i,j) > CS%col_thick_melt_threshold)) then
+        fluxes%evap(i,j) = fluxes%evap(i,j) - fraz
+        CS%lprec(i,j)=CS%lprec(i,j) - fraz  
+      else
+        fluxes%evap(i,j)=0.0
+        fluxes%lprec(i,j)=0.0
+      endif
                                              
       state%frazil(i,j) = 0.0
 
@@ -908,12 +961,12 @@ subroutine add_shelf_flux(G, CS, state, fluxes)
   ! updated here.
   
   if (CS%shelf_mass_is_dynamic) then
-    do j=G%jsc,G%jec ; do i=G%isc-1,G%iec
+    do j=G%jsd,G%jed ; do i=G%isd,G%ied-1
       fluxes%rigidity_ice_u(I,j) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i+1,j))
     enddo ; enddo
 
-    do j=G%jsc-1,G%jec ; do i=G%isc,G%iec
+    do j=G%jsd,G%jed-1 ; do i=G%isd,G%ied
       fluxes%rigidity_ice_v(i,J) = (CS%kv_ice / CS%density_ice) * &
                                     max(CS%mass_shelf(i,j), CS%mass_shelf(i,j+1))
     enddo ; enddo
@@ -1136,6 +1189,19 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
   call get_param(param_file, mod, "DYNAMIC_SHELF_MASS", CS%shelf_mass_is_dynamic, &
                  "If true, the ice sheet mass can evolve with time.", &
                  default=.false.)
+!   call get_param(param_file, mod, "UPDATE_SHELF_MASS_FROM_MELT", CS%update_shelf_mass_from_melt, &
+!                  "If true, the ice sheet mass can evolve with time due to ice-ocean thermodynamics.", &
+!                  default=.false.)
+!   call get_param(param_file, mod, "UPDATE_SHELF_MASS_FROM_REFREEZE_ONLY", CS%update_shelf_mass_from_refreeze_only, &
+!                  "If true, the ice sheet mass can evolve with time due to basal ice formation.", &
+!                  default=.false.)
+
+  call get_param(param_file, mod, "APPLY_FRAZIL_MASS_FLUX", CS%apply_frazil_mass_flux, &
+                 "If true, frazil formed in the cavity is applied as a mass flux at the surface.", &
+                 default=.true.)
+
+
+
   if (CS%shelf_mass_is_dynamic) then
     call get_param(param_file, mod, "OVERRIDE_SHELF_MOVEMENT", CS%override_shelf_movement, &
                  "If true, user provided code specifies the ice-shelf \n"//&
@@ -1198,7 +1264,7 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
 !  call get_param(param_file, mod, "LENLAT", CS%len_lat, &
 !                 "The latitudinal or y-direction length of the domain.", &
 !                 units="axis_units", fail_if_missing=.true.)
-  call get_param(param_file, mod, "DT_FORCING", CS%time_step, &
+  call get_param(param_file, mod, "DT_THERM", CS%time_step, &
                  "The time step for changing forcing, coupling with other \n"//&
                  "components, or potentially writing certain diagnostics. \n"//&
                  "The default value is given by DT.", units="s", default=0.0)
@@ -1485,6 +1551,10 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
     ! This model is initialized internally or from a file.
     call initialize_ice_thickness (CS%h_shelf, CS%area_shelf_h, CS%hmask, G, param_file)
 
+    call pass_var (CS%h_shelf,G%domain)
+    call pass_var (CS%area_shelf_h,G%domain)
+    call pass_var (CS%hmask,G%domain)
+
     ! next make sure mass is consistent with thickness
     do j=G%jsd,G%jed
       do i=G%isd,G%ied
@@ -1502,6 +1572,20 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
                        G, CS%restart_CSp)
    
 
+    ! next make sure mass is consistent with thickness
+    do j=G%jsd,G%jed
+      do i=G%isd,G%ied
+        CS%hmask(i,j) = 0.0
+        if (CS%mass_shelf(i,j) > 0.0) then
+          CS%h_shelf(i,j) = CS%mass_shelf(i,j)/CS%density_ice
+          if (CS%area_shelf_h(i,j) .ge. G%areaT(i,j)) then
+             CS%hmask(i,j) = 1.0
+          else
+             CS%hmask(i,j) = 2.0
+          endif
+        endif
+      enddo
+    enddo
 
     ! i think this call isnt necessary - all it does is set hmask to 3 at
     ! the dirichlet boundary, and now this is done elsewhere
@@ -1555,8 +1639,11 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
     call pass_var(CS%h_shelf, G%domain)
     call pass_var(CS%mass_shelf, G%domain)
     call cpu_clock_end(id_clock_pass)
+  else
+     call pass_var(CS%h_shelf, G%domain)
+     call pass_var(CS%mass_shelf, G%domain)
+     call pass_var(CS%area_shelf_h, G%domain)
   endif
-    call pass_var(CS%area_shelf_h, G%domain)
 
   do j=jsd,jed ; do i=isd,ied ! changed stride
     if (CS%area_shelf_h(i,j) > G%areaT(i,j)) then
@@ -1595,7 +1682,7 @@ subroutine initialize_ice_shelf(Time, CS, diag, fluxes, Time_in, solo_mode_in)
     enddo ; enddo
   endif
   
-  write (procnum,'(I2)') mpp_pe()
+!  write (procnum,'(I2)') mpp_pe()
   if (.not. solo_mode) then
   call pass_vector(fluxes%frac_shelf_u, fluxes%frac_shelf_v, G%domain, TO_ALL, CGRID_NE)
   endif
