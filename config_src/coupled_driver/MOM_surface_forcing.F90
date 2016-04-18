@@ -517,11 +517,11 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
       if (ASSOCIATED(IOB%salt_flux) .and. (CS%ice_salt_concentration>0.0)) &
         net_FW(i,j) = net_FW(i,j) - G%areaT(i,j) * &
                      (IOB%salt_flux(i-i0,j-j0) / CS%ice_salt_concentration)
-      net_FW2(i,j) = net_FW(i,j)
+      net_FW2(i,j) = net_FW(i,j) 
     enddo ; enddo
 
     if (CS%adjust_net_fresh_water_by_scaling) then
-      call adjust_area_mean_to_zero(net_FW2, G, fluxes%netFWGlobalScl)
+      call adjust_area_mean_to_zero(net_FW2, G, fluxes%netFWGlobalScl,has_area=.true.)
       do j=js,je ; do i=is,ie
         fluxes%vprec(i,j) = fluxes%vprec(i,j) + (net_FW2(i,j) - net_FW(i,j)) * G%mask2dT(i,j)
       enddo; enddo

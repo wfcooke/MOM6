@@ -277,23 +277,33 @@ subroutine global_j_mean(array, j_mean, G, mask)
 end subroutine global_j_mean
 
 !> Adjust 2d array such that area mean is zero without moving the zero contour
-subroutine adjust_area_mean_to_zero(array, G, scaling)
+subroutine adjust_area_mean_to_zero(array, G, scaling, has_area)
   real, dimension(NIMEM_,NJMEM_), intent(inout) :: array   !< 2D array to be adjusted
   type(ocean_grid_type),          intent(inout) :: G       !< Grid structure
   real, optional,                 intent(out)   :: scaling !< The scaling factor used
+  logical, optional,              intent(in)    :: has_area
   ! Local variables
-  real, dimension(SZI_(G), SZJ_(G)) :: posVals, negVals, areaXposVals, areaXnegVals
+  real, dimension(SZI_(G), SZJ_(G)) :: posVals, negVals, areaXposVals, areaXnegVals, areaT
   integer :: i,j
   real :: areaIntPosVals, areaIntNegVals, posScale, negScale
+  logical :: area_included = .false.
 
   areaXposVals(:,:) = 0.
   areaXnegVals(:,:) = 0.
 
+  if (PRESENT(has_area)) area_included = has_area
+
+  if (area_included) then
+     areaT = 1.0
+  else
+     areaT = G%areaT
+  endif
+
   do j=G%jsc,G%jec ; do i=G%isc,G%iec
     posVals(i,j) = max(0., array(i,j))
-    areaXposVals(i,j) = G%areaT(i,j) * posVals(i,j)
+    areaXposVals(i,j) = areaT(i,j) * posVals(i,j)
     negVals(i,j) = min(0., array(i,j))
-    areaXnegVals(i,j) = G%areaT(i,j) * negVals(i,j)
+    areaXnegVals(i,j) = areaT(i,j) * negVals(i,j)
   enddo ; enddo
 
   areaIntPosVals = reproducing_sum( areaXposVals )
