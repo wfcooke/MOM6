@@ -523,7 +523,7 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, G, CS, state, 
     if (CS%adjust_net_fresh_water_by_scaling) then
       call adjust_area_mean_to_zero(net_FW2, G, fluxes%netFWGlobalScl,has_area=.true.)
       do j=js,je ; do i=is,ie
-        fluxes%vprec(i,j) = fluxes%vprec(i,j) + (net_FW2(i,j) - net_FW(i,j)) * G%mask2dT(i,j)
+        fluxes%vprec(i,j) = fluxes%vprec(i,j) + ((net_FW2(i,j) - net_FW(i,j)) * G%mask2dT(i,j)) /  G%areaT(i,j)
       enddo; enddo
     else
       fluxes%netFWGlobalAdj = reproducing_sum(net_FW(:,:), isr, ier, jsr, jer) / CS%area_surf
