@@ -385,7 +385,7 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
   else ! Previous block for new_sim=.T., this block restores state
 !    This line calls a subroutine that reads the initial conditions  !
 !  from a previously generated file.                                 !
-    h(:,:,:) = 0.0  ! This line may be needed to reproduce across restarts for some configurations - MJH
+
     call restore_state(dirs%input_filename, dirs%restart_input_dir, Time, &
                        G, restart_CS)
     if (present(Time_in)) Time = Time_in

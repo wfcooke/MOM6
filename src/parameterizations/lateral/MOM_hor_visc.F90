@@ -291,6 +291,10 @@ subroutine horizontal_viscosity(u, v, h, diffu, diffv, MEKE, VarMix, G, GV, CS, 
                      ! point thicknesses, in H; This form guarantees that hq/hu < 4.
   real :: h_neglect  ! thickness so small it can be lost in roundoff and so neglected (H)
   real :: h_neglect3 ! h_neglect^3, in H3
+  real :: hrat_minu   ! minimum thicknesses at the 2 neighboring C-grid u 
+                     ! velocity points with masking applied
+  real :: hrat_minv   ! minimum thicknesses at the 2 neighboring C-grid v 
+                     ! velocity points with masking applied
   real :: hrat_min   ! minimum thicknesses at the 4 neighboring
                      ! velocity points divided by the thickness at the stress
                      ! point (h or q point) (nondimensional)
@@ -512,7 +516,13 @@ subroutine horizontal_viscosity(u, v, h, diffu, diffv, MEKE, VarMix, G, GV, CS, 
           0.25*((sh_xy(I-1,J-1)*sh_xy(I-1,J-1) + sh_xy(I,J)*sh_xy(I,J)) + &
                 (sh_xy(I-1,J)*sh_xy(I-1,J) + sh_xy(I,J-1)*sh_xy(I,J-1))))
       if (CS%better_bound_Ah .or. CS%better_bound_Kh) then
-        hrat_min = min(1.0, min(h_u(I,j), h_u(I-1,j), h_v(i,J), h_v(i,J-1)) / &
+        hrat_minu = min(h_u(I-1,j),h_u(I,j))
+        if ((G%mask2dCu(I,j)==0.) hrat_minu = h_u(I-1,j)
+        if ((G%mask2dCu(I-1,j)==0.) hrat_minu = h_u(I,j)
+        hrat_minv = min(h_v(i,J),h_v(i,J-1))
+        if ((G%mask2dCv(i,J)==0.) hrat_minv = h_v(i,J-1)
+        if ((G%mask2dCv(i,J-1)==0.) hrat_minv = h_v(i,J)
+        hrat_min = min(1.0, min(hrat_minu,hrat_minv) / &
                             (h(i,j,k) + h_neglect) )
         visc_bound_rem = 1.0
       endif
