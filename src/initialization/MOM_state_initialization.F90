@@ -3,8 +3,8 @@ module MOM_state_initialization
 
 ! This file is part of MOM6. See LICENSE.md for the license.
 
-use MOM_debugging, only : hchksum, qchksum, uchksum, vchksum
-use MOM_coms, only : max_across_PEs, min_across_PEs
+use MOM_debugging, only : hchksum, qchksum, uvchksum
+use MOM_coms, only : max_across_PEs, min_across_PEs, reproducing_sum
 use MOM_cpu_clock, only : cpu_clock_id, cpu_clock_begin, cpu_clock_end
 use MOM_cpu_clock, only :  CLOCK_ROUTINE, CLOCK_LOOP
 use MOM_domains, only : pass_var, pass_vector, sum_across_PEs, broadcast
@@ -347,8 +347,9 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
     end select
 
     call pass_vector(u, v, G%Domain)
-    if (debug) call uchksum(u, "MOM_initialize_state: u ", G%HI, haloshift=1)
-    if (debug) call vchksum(v, "MOM_initialize_state: v ", G%HI, haloshift=1)
+    if (debug) then
+        call uvchksum("MOM_initialize_state [uv]", u, v, G%HI, haloshift=1)
+    endif
 
 !   Optionally convert the thicknesses from m to kg m-2.  This is particularly
 ! useful in a non-Boussinesq model.
@@ -384,6 +385,7 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
   else ! Previous block for new_sim=.T., this block restores state
 !    This line calls a subroutine that reads the initial conditions  !
 !  from a previously generated file.                                 !
+
     call restore_state(dirs%input_filename, dirs%restart_input_dir, Time, &
                        G, restart_CS)
     if (present(Time_in)) Time = Time_in
@@ -450,21 +452,22 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
                  "   DOME - specified inflow on northern boundary\n"//&
                  "   tidal_bay - Flather with tidal forcing on eastern boundary\n"//&
                  "   supercritical - now only needed here for the allocations\n"//&
+                 "   Kelvin - barotropic Kelvin wave forcing on the western boundary\n"//&
                  "   USER - user specified", default="none")
     if (trim(config) /= "none") OBC%OBC_user_config = trim(config)
-    if (open_boundary_query(OBC, apply_specified_OBC=.true.)) then
-      if (trim(config) == "DOME") then
-        call DOME_set_OBC_data(OBC, tv, G, GV, PF, tracer_Reg)
-      elseif (lowercase(trim(config)) == "supercritical") then
-        call supercritical_set_OBC_data(OBC, G, PF)
-      elseif (trim(config) == "tidal_bay") then
-        OBC%update_OBC = .true.
-      elseif (trim(config) == "USER") then
-        call user_set_OBC_data(OBC, tv, G, PF, tracer_Reg)
-      elseif (.not. trim(config) == "none") then
-        call MOM_error(FATAL, "The open boundary conditions specified by "//&
-                "OBC_USER_CONFIG = "//trim(config)//" have not been fully implemented.")
-      endif
+    if (trim(config) == "DOME") then
+      call DOME_set_OBC_data(OBC, tv, G, GV, PF, tracer_Reg)
+    elseif (lowercase(trim(config)) == "supercritical") then
+      call supercritical_set_OBC_data(OBC, G, PF)
+    elseif (trim(config) == "tidal_bay") then
+      OBC%update_OBC = .true.
+    elseif (trim(config) == "Kelvin") then
+      OBC%update_OBC = .true.
+    elseif (trim(config) == "USER") then
+      call user_set_OBC_data(OBC, tv, G, PF, tracer_Reg)
+    elseif (.not. trim(config) == "none") then
+      call MOM_error(FATAL, "The open boundary conditions specified by "//&
+              "OBC_USER_CONFIG = "//trim(config)//" have not been fully implemented.")
     endif
     if (open_boundary_query(OBC, apply_open_OBC=.true.)) then
       call set_Flather_data(OBC, tv, h, G, PF, tracer_Reg)
@@ -476,8 +479,8 @@ subroutine MOM_initialize_state(u, v, h, tv, Time, G, GV, PF, dirs, &
   ! Still need a way to specify the boundary values
   if (debug.and.associated(OBC)) then
     call hchksum(G%mask2dT, 'MOM_initialize_state: mask2dT ', G%HI)
-    call uchksum(G%mask2dCu, 'MOM_initialize_state: mask2dCu ', G%HI)
-    call vchksum(G%mask2dCv, 'MOM_initialize_state: mask2dCv ', G%HI)
+    call uvchksum('MOM_initialize_state: mask2dC[uv]', G%mask2dCu,  &
+                  G%mask2dCv, G%HI)
     call qchksum(G%mask2dBu, 'MOM_initialize_state: mask2dBu ', G%HI)
   endif
 
@@ -995,8 +998,8 @@ subroutine cut_off_column_top(nk, tv, Rho0, G_earth, depth, min_thickness, &
       T0(k) = T(nk+1-k)
       h1(k) = h(nk+1-k)
     enddo
-    call remapping_core_h(nk, h0, T0, nk, h1, T1, remap_CS )
-    call remapping_core_h(nk, h0, S0, nk, h1, S1, remap_CS )
+    call remapping_core_h(remap_CS, nk, h0, T0, nk, h1, T1)
+    call remapping_core_h(remap_CS, nk, h0, S0, nk, h1, S1)
     do k=1,nk
       S(k) = S1(nk+1-k)
       T(k) = T1(nk+1-k)
@@ -1559,13 +1562,15 @@ subroutine compute_global_grid_integrals(G)
   type(ocean_grid_type), intent(inout) :: G
   ! Subroutine to pre-compute global integrals of grid quantities for
   ! later use in reporting diagnostics
+  real, dimension(G%isc:G%iec, G%jsc:G%jec) :: tmpForSumming
   integer :: i,j
 
+  tmpForSumming(:,:) = 0.
   G%areaT_global = 0.0 ; G%IareaT_global = 0.0
   do j=G%jsc,G%jec ; do i=G%isc,G%iec
-    G%areaT_global = G%areaT_global + ( G%areaT(i,j) * G%mask2dT(i,j) )
+    tmpForSumming(i,j) = G%areaT(i,j) * G%mask2dT(i,j)
   enddo ; enddo
-  call sum_across_PEs( G%areaT_global )
+  G%areaT_global = reproducing_sum(tmpForSumming)
   G%IareaT_global = 1. / G%areaT_global
 end subroutine compute_global_grid_integrals
 

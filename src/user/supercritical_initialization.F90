@@ -39,12 +39,13 @@ subroutine supercritical_set_OBC_data(OBC, G, param_file)
         'supercritical_set_OBC_data() was called but OBC type was not initialized!')
 
   call get_param(param_file, mod, "SUPERCRITICAL_ZONAL_FLOW", zonal_flow, &
-                 default=8.57, do_not_log=.true.) ! Do not log avoids maintaining identical descriptions
+                 "Constant zonal flow imposed at upstream open boundary.", &
+                 units="m/s", default=8.57)
 
   allocate(OBC%ubt_outer(G%IsdB:G%IedB,G%jsd:G%jed)) ; OBC%ubt_outer(:,:) = 0.0
 
   do j=G%jsd,G%jed ; do I=G%IsdB,G%IedB
-    if (OBC%OBC_segment_u(I,j)>0) then
+    if (OBC%segnum_u(I,j)>0) then
       OBC%ubt_outer(I,j) = zonal_flow
     endif
   enddo ; enddo
