@@ -12,6 +12,8 @@ module MOM_ALE_sponge
 ! This file is part of MOM6. See LICENSE.md for the license.
 
 use MOM_coms, only : sum_across_PEs
+use MOM_cpu_clock, only : cpu_clock_id, cpu_clock_begin, cpu_clock_end
+use MOM_cpu_clock, only :  CLOCK_ROUTINE, CLOCK_LOOP
 use MOM_diag_mediator, only : post_data, query_averaging_enabled, register_diag_field
 use MOM_diag_mediator, only : diag_ctrl
 use MOM_error_handler, only : MOM_error, FATAL, NOTE, WARNING, is_root_pe
@@ -103,6 +105,12 @@ type, public :: ALE_sponge_CS ; private
   type(remapping_cs) :: remap_cs   !< Remapping parameters and work arrays
 
   logical :: new_sponges  !< True if using newer sponge code
+  
+  integer :: id_clock_init  !< IDs for timers
+  integer :: id_clock_setup !< IDs for timers
+  integer :: id_clock_apply !< IDs for timers
+  integer :: id_clock_horiz !< IDs for timers
+  integer :: id_clock_vert  !< IDs for timers
 end type ALE_sponge_CS
 
 contains
@@ -138,6 +146,7 @@ subroutine initialize_ALE_sponge_fixed(Iresttime, G, param_file, CS, data_h, nz_
                             "control structure.")
     return
   endif
+  
 
 ! Set default, read and log parameters
   call log_version(param_file, mdl, version, "")
@@ -149,6 +158,14 @@ subroutine initialize_ALE_sponge_fixed(Iresttime, G, param_file, CS, data_h, nz_
   if (.not.use_sponge) return
 
   allocate(CS)
+
+  CS%id_clock_init  = cpu_clock_id('(Initialize ALE sponge fixed)', grain=CLOCK_ROUTINE)
+  CS%id_clock_setup = cpu_clock_id('(Setup ALE sponge fixed)', grain=CLOCK_LOOP)
+  CS%id_clock_apply = cpu_clock_id('(Apply ALE sponge fixed)', grain=CLOCK_LOOP)
+  CS%id_clock_horiz = cpu_clock_id('(ALE sponge fixed - horiz_interp)', grain=CLOCK_LOOP)
+  CS%id_clock_vert  = cpu_clock_id('(ALE sponge fixed - vert_interp)' , grain=CLOCK_LOOP)
+
+  call cpu_clock_begin(CS%id_clock_init)
 
   call get_param(param_file, mdl, "SPONGE_UV", CS%sponge_uv, &
                  "Apply sponges in u and v, in addition to tracers.", &
@@ -296,6 +313,7 @@ subroutine initialize_ALE_sponge_fixed(Iresttime, G, param_file, CS, data_h, nz_
                  "The total number of columns where sponges are applied at v points.")
   endif
 
+  call cpu_clock_end(CS%id_clock_init)
 end subroutine initialize_ALE_sponge_fixed
 
 !> This subroutine determines the number of points which are within
@@ -338,6 +356,13 @@ subroutine initialize_ALE_sponge_varying(Iresttime, G, param_file, CS)
 
   allocate(CS)
 
+  CS%id_clock_init  = cpu_clock_id('(Initialize ALE sponge varying)', grain=CLOCK_ROUTINE)
+  CS%id_clock_setup = cpu_clock_id('(Setup ALE sponge varying)', grain=CLOCK_LOOP)
+  CS%id_clock_apply = cpu_clock_id('(Apply ALE sponge varying)', grain=CLOCK_LOOP)
+  CS%id_clock_horiz = cpu_clock_id('(ALE sponge vary - horiz_interp)', grain=CLOCK_LOOP)
+  CS%id_clock_vert  = cpu_clock_id('(ALE sponge vary - vert_interp)' , grain=CLOCK_LOOP)
+
+  call cpu_clock_begin(CS%id_clock_init)
   call get_param(param_file, mdl, "SPONGE_UV", CS%sponge_uv, &
                  "Apply sponges in u and v, in addition to tracers.", &
                  default=.false.)
@@ -383,12 +408,13 @@ subroutine initialize_ALE_sponge_varying(Iresttime, G, param_file, CS)
       endif
     enddo ; enddo
 
-    CS%new_sponges = .true.
 
   endif
 
   total_sponge_cols = CS%num_col
   call sum_across_PEs(total_sponge_cols)
+  
+  if ( total_sponge_cols > 0 ) CS%new_sponges = .true.
 
 ! Call the constructor for remapping control structure
   call initialize_remapping(CS%remap_cs, remapScheme, boundary_extrapolation=bndExtrapolation)
@@ -463,6 +489,7 @@ subroutine initialize_ALE_sponge_varying(Iresttime, G, param_file, CS)
      call log_param(param_file, mdl, "!Total sponge columns at v points", total_sponge_cols_v, &
                  "The total number of columns where sponges are applied at v points.")
   endif
+  call cpu_clock_end(CS%id_clock_init)
 
 end subroutine initialize_ALE_sponge_varying
 
@@ -493,6 +520,8 @@ subroutine set_up_ALE_sponge_field_fixed(sp_val, G, f_ptr, CS)
 
   if (.not.associated(CS)) return
 
+  call cpu_clock_begin(CS%id_clock_setup)
+
   CS%fldno = CS%fldno + 1
 
   if (CS%fldno > MAX_FIELDS_) then
@@ -512,6 +541,7 @@ subroutine set_up_ALE_sponge_field_fixed(sp_val, G, f_ptr, CS)
   enddo
 
   CS%var(CS%fldno)%p => f_ptr
+  call cpu_clock_end(CS%id_clock_setup)
 
 end subroutine set_up_ALE_sponge_field_fixed
 
@@ -544,6 +574,7 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
 
   if (.not.associated(CS)) return
 
+  call cpu_clock_begin(CS%id_clock_setup)
   ! Call this in case it was not previously done.
   call time_interp_external_init()
 
@@ -582,9 +613,9 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
   ! In the future, this should be generalized using an interface to return the
   ! modulo attribute of the zonal axis (mjh).
 
- ! call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
- !                                    missing_value,.true.,&
- !                                    .false.,.false.)
+  call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
+                                     missing_value,.true.,&
+                                     .false.,.false.)
 
 ! Do not think halo updates are needed (mjh)
 !  call pass_var(sp_val,G%Domain)
@@ -600,15 +631,15 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
     ! Build the source grid
     zTopOfCell = 0. ; zBottomOfCell = 0. ; nPoints = 0; hsrc(:) = 0.0; tmpT1d(:) = -99.9
     do k=1,nz_data
-      if (mask_z(CS%col_i(col),CS%col_j(col),k) == 1.0) then
+!      if (mask_z(CS%col_i(col),CS%col_j(col),k) == 1.0) then
         zBottomOfCell = -min( z_edges_in(k+1), G%bathyT(CS%col_i(col),CS%col_j(col)) )
-!        tmpT1d(k) = sp_val(CS%col_i(col),CS%col_j(col),k)
-      elseif (k>1) then
-        zBottomOfCell = -G%bathyT(CS%col_i(col),CS%col_j(col))
-!        tmpT1d(k) = tmpT1d(k-1)
-!      else ! This next block should only ever be reached over land
-!        tmpT1d(k) = -99.9
-      endif
+!!        tmpT1d(k) = sp_val(CS%col_i(col),CS%col_j(col),k)
+!      elseif (k>1) then
+!        zBottomOfCell = -G%bathyT(CS%col_i(col),CS%col_j(col))
+!!        tmpT1d(k) = tmpT1d(k-1)
+!!      else ! This next block should only ever be reached over land
+!!        tmpT1d(k) = -99.9
+!      endif
       hsrc(k) = zTopOfCell - zBottomOfCell
       if (hsrc(k)>0.) nPoints = nPoints + 1
       zTopOfCell = zBottomOfCell ! Bottom becomes top for next value of k
@@ -626,6 +657,7 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
   deallocate( tmpT1d )
   deallocate(sp_val, mask_z)
 
+  call cpu_clock_end(CS%id_clock_setup)
 end subroutine set_up_ALE_sponge_field_varying
 
 !> This subroutine stores the reference profile at uand v points for the variable
@@ -787,6 +819,7 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
 
   if (.not.associated(CS)) return
 
+  call cpu_clock_begin(CS%id_clock_apply)
   if (CS%new_sponges) then
     if (.not. present(Time)) &
          call MOM_error(FATAL,"apply_ALE_sponge: No time information provided")
@@ -800,9 +833,11 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
       sp_val(:,:,:)=0.0
       mask_z(:,:,:)=0.0
 
-      call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
+      call cpu_clock_begin(CS%id_clock_horiz)
+      call horiz_interp_and_extrap_tracer(CS%Ref_val(m)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
                                      missing_value,.true.,&
                                      .false.,.false.)
+      call cpu_clock_end(CS%id_clock_horiz)
 
 !      call pass_var(sp_val,G%Domain)
 !      call pass_var(mask_z,G%Domain)
@@ -829,6 +864,7 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
   allocate(tmp_val2(nz_data))
 
 
+  call cpu_clock_begin(CS%id_clock_vert)
   do m=1,CS%fldno
     do c=1,CS%num_col
 ! c is an index for the next 3 lines but a multiplier for the rest of the loop
@@ -851,6 +887,7 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
 
     enddo
   enddo
+  call cpu_clock_end(CS%id_clock_vert)
 
   ! for debugging
   !c=CS%num_col
@@ -959,6 +996,7 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
   endif
 
   deallocate(tmp_val2)
+  call cpu_clock_end(CS%id_clock_apply)
 
 end subroutine apply_ALE_sponge
 
