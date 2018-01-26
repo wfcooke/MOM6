@@ -26,6 +26,7 @@ use MOM_time_manager, only : get_external_field_axes
 use MOM_remapping, only : remapping_cs, remapping_core_h, initialize_remapping
 use MOM_horizontal_regridding, only : horiz_interp_and_extrap_tracer
 use mpp_io_mod, only : get_axis_data=>mpp_get_axis_data, axistype
+use mpp_mod, only : max_across_PEs=>mpp_max
 ! GMM - Planned extension:  Support for time varying sponge targets.
 
 implicit none ; private
@@ -568,6 +569,7 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
   integer :: j, k, col, kd
   integer :: isd,ied,jsd,jed
   integer :: nPoints
+  real :: max_depth
   integer, dimension(4) :: fld_sz
   integer :: nz_data !< the number of vertical levels in this input field
   character(len=256) :: mesg ! String for error messages
@@ -636,6 +638,10 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
     z_edges_in(k)=0.5*(z_in(k-1)+z_in(k))
   enddo
   z_edges_in(kd+1)=2.0*z_in(kd) - z_in(kd-1)
+
+  max_depth = maxval(G%bathyT)
+  call max_across_PEs(max_depth)
+  if (z_edges_in(kd+1)<max_depth) z_edges_in(kd+1)=max_depth
 
  ! call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
  !                                    missing_value,.true.,&
