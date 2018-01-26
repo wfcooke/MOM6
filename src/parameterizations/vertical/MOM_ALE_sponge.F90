@@ -21,9 +21,11 @@ use MOM_file_parser, only : get_param, log_param, log_version, param_file_type
 use MOM_grid, only : ocean_grid_type
 use MOM_spatial_means, only : global_i_mean
 use MOM_time_manager, only : time_type, init_external_field, get_external_field_size, time_interp_external_init
+use MOM_time_manager, only : time_interp_external
+use MOM_time_manager, only : get_external_field_axes
 use MOM_remapping, only : remapping_cs, remapping_core_h, initialize_remapping
 use MOM_horizontal_regridding, only : horiz_interp_and_extrap_tracer
-
+use mpp_io_mod, only : get_axis_data=>mpp_get_axis_data, axistype
 ! GMM - Planned extension:  Support for time varying sponge targets.
 
 implicit none ; private
@@ -105,7 +107,7 @@ type, public :: ALE_sponge_CS ; private
   type(remapping_cs) :: remap_cs   !< Remapping parameters and work arrays
 
   logical :: new_sponges  !< True if using newer sponge code
-  
+  logical :: sponge_data_on_grid !<True if sponge data were pre-interpolated to the model grid
   integer :: id_clock_init  !< IDs for timers
   integer :: id_clock_setup !< IDs for timers
   integer :: id_clock_apply !< IDs for timers
@@ -334,7 +336,7 @@ subroutine initialize_ALE_sponge_varying(Iresttime, G, param_file, CS)
 #include "version_variable.h"
   character(len=40)  :: mdl = "MOM_sponge"  ! This module's name.
   logical :: use_sponge
-    real, allocatable, dimension(:,:) :: Iresttime_u !< inverse of the restoring time at u points, s-1
+  real, allocatable, dimension(:,:) :: Iresttime_u !< inverse of the restoring time at u points, s-1
   real, allocatable, dimension(:,:) :: Iresttime_v !< inverse of the restoring time at v points, s-1
   logical :: bndExtrapolation = .true. ! If true, extrapolate boundaries
   integer :: i, j, k, col, total_sponge_cols, total_sponge_cols_u, total_sponge_cols_v
@@ -378,6 +380,10 @@ subroutine initialize_ALE_sponge_varying(Iresttime, G, param_file, CS)
                  "than PCM. E.g., if PPM is used for remapping, a \n" //&
                  "PPM reconstruction will also be used within boundary cells.", &
                  default=.false., do_not_log=.true.)
+
+  call get_param(param_file, mdl, "SPONGE_DATA_ON_GRID", CS%sponge_data_on_grid, &
+                 "If true, sponges data have already been interpolated \n"//&
+                 "and extrapolated on the model grid. \n",default=.false.)
 
   CS%nz = G%ke
   CS%isc = G%isc ; CS%iec = G%iec ; CS%jsc = G%jsc ; CS%jec = G%jec
@@ -557,15 +563,15 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
 
   real, allocatable, dimension(:,:,:) :: sp_val !< Field to be used in the sponge
   real, allocatable, dimension(:,:,:) :: mask_z !< Field mask for the sponge data
-  real, allocatable, dimension(:), target :: z_in, z_edges_in
+  real, allocatable, dimension(:) :: z_in, z_edges_in
   real :: missing_value
-  integer :: j, k, col
+  integer :: j, k, col, kd
   integer :: isd,ied,jsd,jed
   integer :: nPoints
   integer, dimension(4) :: fld_sz
   integer :: nz_data !< the number of vertical levels in this input field
   character(len=256) :: mesg ! String for error messages
-
+  type(axistype), dimension(4) :: axes_data
   ! Local variables for ALE remapping
   real, dimension(:), allocatable :: hsrc
   real, dimension(:), allocatable :: tmpT1d
@@ -574,10 +580,10 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
 
   if (.not.associated(CS)) return
 
-  call cpu_clock_begin(CS%id_clock_setup)
   ! Call this in case it was not previously done.
   call time_interp_external_init()
 
+  call cpu_clock_begin(CS%id_clock_setup)
   isd = G%isd; ied = G%ied; jsd = G%jsd; jed = G%jed
   CS%fldno = CS%fldno + 1
 
@@ -592,7 +598,12 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
   ! containing time-interpolated values from an external file corresponding
   ! to the current model date.
 
-  CS%Ref_val(CS%fldno)%id = init_external_field(filename, fieldname)
+  if (CS%sponge_data_on_grid) then
+      CS%Ref_val(CS%fldno)%id = init_external_field(filename, fieldname,domain=G%Domain%mpp_domain)
+  else
+      CS%Ref_val(CS%fldno)%id = init_external_field(filename, fieldname)
+  endif
+
   fld_sz(1:4)=-1
   fld_sz = get_external_field_size(CS%Ref_val(CS%fldno)%id)
   nz_data = fld_sz(3)
@@ -613,9 +624,22 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
   ! In the future, this should be generalized using an interface to return the
   ! modulo attribute of the zonal axis (mjh).
 
-  call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
-                                     missing_value,.true.,&
-                                     .false.,.false.)
+  fld_sz = get_external_field_size(CS%Ref_val(CS%fldno)%id)
+  axes_data =  get_external_field_axes(CS%Ref_val(CS%fldno)%id)
+  kd = fld_sz(3)
+  allocate(z_edges_in(kd+1))
+  allocate(z_in(kd))
+  call get_axis_data(axes_data(3), z_in)
+  ! construct level cell boundaries as the mid-point between adjacent centers
+  z_edges_in(1) = 0.0
+  do k=2,kd
+    z_edges_in(k)=0.5*(z_in(k-1)+z_in(k))
+  enddo
+  z_edges_in(kd+1)=2.0*z_in(kd) - z_in(kd-1)
+
+ ! call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
+ !                                    missing_value,.true.,&
+ !                                    .false.,.false.)
 
 ! Do not think halo updates are needed (mjh)
 !  call pass_var(sp_val,G%Domain)
@@ -656,6 +680,7 @@ subroutine set_up_ALE_sponge_field_varying(filename, fieldname, Time, G, f_ptr, 
   deallocate( hSrc )
   deallocate( tmpT1d )
   deallocate(sp_val, mask_z)
+  deallocate(z_in,z_edges_in)
 
   call cpu_clock_end(CS%id_clock_setup)
 end subroutine set_up_ALE_sponge_field_varying
@@ -834,9 +859,13 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
       mask_z(:,:,:)=0.0
 
       call cpu_clock_begin(CS%id_clock_horiz)
-      call horiz_interp_and_extrap_tracer(CS%Ref_val(m)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
-                                     missing_value,.true.,&
-                                     .false.,.false.)
+      if (CS%sponge_data_on_grid) then
+          call time_interp_external(CS%Ref_val(CS%fldno)%id, Time,  sp_val)
+      else
+          call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
+               missing_value,.true.,&
+               .false.,.false.)
+      endif
       call cpu_clock_end(CS%id_clock_horiz)
 
 !      call pass_var(sp_val,G%Domain)
@@ -854,7 +883,7 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
         enddo
       enddo
 
-      deallocate(sp_val, mask_z)
+      deallocate(sp_val,mask_z)
     enddo
   else
     nz_data = CS%nz_data
