@@ -866,9 +866,9 @@ subroutine apply_ALE_sponge(h, dt, G, CS, Time)
 
       call cpu_clock_begin(CS%id_clock_horiz)
       if (CS%sponge_data_on_grid) then
-          call time_interp_external(CS%Ref_val(CS%fldno)%id, Time,  sp_val)
+          call time_interp_external(CS%Ref_val(m)%id, Time,  sp_val)
       else
-          call horiz_interp_and_extrap_tracer(CS%Ref_val(CS%fldno)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
+          call horiz_interp_and_extrap_tracer(CS%Ref_val(m)%id,Time, 1.0,G,sp_val,mask_z,z_in,z_edges_in,&
                missing_value,.true.,&
                .false.,.false.)
       endif

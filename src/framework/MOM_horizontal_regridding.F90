@@ -266,7 +266,7 @@ subroutine horiz_interp_and_extrap_tracer_record(filename, varnam,  conversion, 
   character(len=*),      intent(in)    :: varnam     !< Name of tracer in filee.
   real,                  intent(in)    :: conversion !< Conversion factor for tracer.
   integer,               intent(in)    :: recnum     !< Record number of tracer to be read.
-  type(ocean_grid_type), intent(in) :: G          !< Grid object
+  type(ocean_grid_type), intent(in)    :: G          !< Grid object
   real, allocatable, dimension(:,:,:)  :: tr_z       !< pointer to allocatable tracer array on local
                                                      !! model grid and native vertical levels.
   real, allocatable, dimension(:,:,:)  :: mask_z     !< pointer to allocatable tracer mask array on
@@ -581,7 +581,7 @@ subroutine horiz_interp_and_extrap_tracer_fms_id(fms_id,  Time, conversion, G, t
   integer,               intent(in)    :: fms_id     !< A unique id used by the FMS time interpolator
   type(time_type),       intent(in)    :: Time       !< A FMS time type
   real,                  intent(in)    :: conversion !< Conversion factor for tracer.
-  type(ocean_grid_type), intent(in) :: G          !< Grid object
+  type(ocean_grid_type), intent(in)    :: G          !< Grid object
   real, allocatable, dimension(:,:,:)  :: tr_z       !< pointer to allocatable tracer array on local
                                                      !! model grid and native vertical levels.
   real, allocatable, dimension(:,:,:)  :: mask_z     !< pointer to allocatable tracer mask array on
@@ -774,9 +774,9 @@ subroutine horiz_interp_and_extrap_tracer_fms_id(fms_id,  Time, conversion, G, t
                interp_method='bilinear',src_modulo=reentrant_x)
     endif
 
-!    if (debug) then
+    if (debug) then
        call myStats(tr_in,missing_value, 1,id,1,jd,k,'Tracer from file')
-!    endif
+    endif
 
     tr_out(:,:) = 0.0
 
