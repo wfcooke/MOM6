@@ -603,14 +603,12 @@ subroutine step_MOM(forces, fluxes, sfc_state, Time_start, time_interval, CS, &
   rel_time = 0.0
   do n=1,n_max
 
-    nt_debug = nt_debug + 1
-
     ! Set the universally visible time to the middle of the time step
-    CS%Time = Time_start + set_time(int(floor(CS%rel_time+0.5*dt+0.5)))
-    CS%rel_time = CS%rel_time + dt
+    CS%Time = Time_start + set_time(int(floor(rel_time+0.5*dt+0.5)))
+    rel_time = rel_time + dt
 
     ! Set the local time to the end of the time step.
-    Time_local = Time_start + set_time(int(floor(CS%rel_time+0.5)))
+    Time_local = Time_start + set_time(int(floor(rel_time+0.5)))
     if (showCallTree) call callTree_enter("DT cycles (step_MOM) n=",n)
 
     !===========================================================================
@@ -645,19 +643,15 @@ subroutine step_MOM(forces, fluxes, sfc_state, Time_start, time_interval, CS, &
       CS%t_dyn_rel_thermo = -dtdia
       if (showCallTree) call callTree_waypoint("finished diabatic_first (step_MOM)")
 
-    endif ! end of block "(CS%diabatic_first .and. (MS%t_dyn_rel_adv==0.0))"
+    endif ! end of block "(CS%diabatic_first .and. (CS%t_dyn_rel_adv==0.0))"
 
-    !===========================================================================
-    ! This is the start of the dynamics stepping part of the algorithm.
-
-    call cpu_clock_begin(id_clock_dynamics)
-    call disable_averaging(CS%diag)
-
-    if ((MS%t_dyn_rel_adv == 0.0) .and. CS%thickness_diffuse .and. CS%thickness_diffuse_first) then
-      if (thermo_does_span_coupling) then
-        dtth = dt_therm
-      else
-        dtth = dt*min(ntstep,n_max-n+1)
+    if (do_dyn) then
+      ! Store pre-dynamics grids for proper diagnostic remapping for transports
+      ! or advective tendencies.  If there are more dynamics steps per advective
+      ! steps (i.e DT_THERM /= DT), this needs to be stored at the first call.
+      if (CS%ndyn_per_adv == 0 .and. CS%t_dyn_rel_adv == 0.) then
+        call diag_copy_diag_to_storage(CS%diag_pre_dyn, h, CS%diag)
+        CS%ndyn_per_adv = CS%ndyn_per_adv + 1
       endif
 
       ! The pre-dynamics velocities might be stored for debugging truncations.
@@ -720,20 +714,13 @@ subroutine step_MOM(forces, fluxes, sfc_state, Time_start, time_interval, CS, &
 
     !===========================================================================
     ! This is the second place where the diabatic processes and remapping could occur.
-    if (MS%t_dyn_rel_adv == 0.0) then
-      if (.not.CS%diabatic_first) then
-        dtdia = CS%t_dyn_rel_thermo
-        if (thermo_does_span_coupling .and. (abs(dt_therm - dtdia) > 1e-6*dt_therm)) then
-          call MOM_error(FATAL, "step_MOM: Mismatch between dt_therm and dtdia "//&
-                         "before call to diabatic.")
-        endif
-        ! Apply diabatic forcing, do mixing, and regrid.
-        call step_MOM_thermo(MS, CS, G, GV, u, v, h, MS%tv, fluxes, dtdia, Time_local, .false.)
+    if (CS%t_dyn_rel_adv == 0.0 .and. do_thermo .and. .not.CS%diabatic_first) then
+      dtdia = CS%t_dyn_rel_thermo
+      if (CS%thermo_spans_coupling .and. (CS%dt_therm > 1.5*cycle_time) .and. &
+          (abs(dt_therm - dtdia) > 1e-6*dt_therm)) then
+        call MOM_error(FATAL, "step_MOM: Mismatch between dt_therm and dtdia "//&
+                       "before call to diabatic.")
       endif
-
-      ! If necessary, temporarily reset CS%Time to the center of the period covered
-      ! by the call to step_MOM_thermo, noting that they end at the same time.
-      if (dtdia > dt) CS%Time = CS%Time - set_time(int(floor(0.5*(dtdia-dt) + 0.5)))
 
       ! Apply diabatic forcing, do mixing, and regrid.
       call step_MOM_thermo(CS, G, GV, u, v, h, CS%tv, fluxes, dtdia, &
@@ -741,8 +728,6 @@ subroutine step_MOM(forces, fluxes, sfc_state, Time_start, time_interval, CS, &
       CS%time_in_thermo_cycle = CS%time_in_thermo_cycle + dtdia
       CS%t_dyn_rel_thermo = 0.0
 
-      if (dtdia > dt) & ! Reset CS%Time to its previous value.
-        CS%Time = Time_start + set_time(int(floor(0.5 + rel_time - 0.5*dt)))
     endif
 
     if (do_dyn) then
