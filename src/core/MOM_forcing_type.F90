@@ -1988,6 +1988,12 @@ subroutine fluxes_accumulate(flux_tmp, fluxes, dt, G, wt2, forces)
     enddo ; enddo
   endif
 
+  if (associated(fluxes%salt_flux_added) .and. associated(flux_tmp%salt_flux_added)) then
+    do j=js,je ; do i=is,ie
+      fluxes%salt_flux_added(i,j) = wt1*fluxes%salt_flux_added(i,j) + wt2*flux_tmp%salt_flux_added(i,j)
+    enddo ; enddo
+  endif
+
   if (associated(fluxes%ustar_shelf) .and. associated(flux_tmp%ustar_shelf)) then
     do i=isd,ied ; do j=jsd,jed
       fluxes%ustar_shelf(i,j)  = flux_tmp%ustar_shelf(i,j)
