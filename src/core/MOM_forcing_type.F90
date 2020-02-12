@@ -688,7 +688,8 @@ subroutine extractFluxes1d(G, GV, US, fluxes, optics, nsw, j, dt_in_T, &
     endif
 
     if (associated(fluxes%salt_flux_added)) then
-      Net_salt(i) = Net_salt(i) +  (scale * dt * (1000.0 * fluxes%salt_flux_added(i,j))) * GV%kg_m2_to_H
+      !Net_salt(i) = Net_salt(i) +  (scale * dt * (1000.0 * fluxes%salt_flux_added(i,j))) * GV%kg_m2_to_H
+      Net_salt(i) = Net_salt(i) +  (scale * dt_in_T * (1000.0 * fluxes%salt_flux_added(i,j))) * GV%kg_m2_to_H
       !Repeat above code for 'rate' term
       if (do_NSR) Net_salt_rate(i) = Net_salt_rate(i) + (scale * 1. * (1000.0 * fluxes%salt_flux_added(i,j))) * GV%kg_m2_to_H
     endif
