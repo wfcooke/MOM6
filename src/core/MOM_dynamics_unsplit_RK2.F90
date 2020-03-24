@@ -76,7 +76,7 @@ use MOM_time_manager, only : operator(-), operator(>), operator(*), operator(/)
 use MOM_ALE, only : ALE_CS
 use MOM_boundary_update, only : update_OBC_data, update_OBC_CS
 use MOM_barotropic, only : barotropic_CS
-use MOM_continuity, only : continuity, continuity_init, continuity_CS
+use MOM_continuity, only : continuity, continuity_init, continuity_CS, continuity_stencil
 use MOM_CoriolisAdv, only : CorAdCalc, CoriolisAdv_init, CoriolisAdv_CS
 use MOM_debugging, only : check_redundant
 use MOM_grid, only : ocean_grid_type
@@ -130,7 +130,7 @@ type, public :: MOM_dyn_unsplit_RK2_CS ; private
   !>@{ Diagnostic IDs
   integer :: id_uh = -1, id_vh = -1
   integer :: id_PFu = -1, id_PFv = -1, id_CAu = -1, id_CAv = -1
-  !!@}
+  !>@}
 
   type(diag_ctrl), pointer :: diag => NULL() !< A structure that is used to
                                    !! regulate the timing of diagnostic output.
@@ -178,7 +178,7 @@ public initialize_dyn_unsplit_RK2, end_dyn_unsplit_RK2
 integer :: id_clock_Cor, id_clock_pres, id_clock_vertvisc
 integer :: id_clock_horvisc, id_clock_continuity, id_clock_mom_update
 integer :: id_clock_pass, id_clock_pass_init
-!!@}
+!>@}
 
 contains
 
@@ -506,7 +506,7 @@ end subroutine register_restarts_dyn_unsplit_RK2
 subroutine initialize_dyn_unsplit_RK2(u, v, h, Time, G, GV, US, param_file, diag, CS, &
                                       restart_CS, Accel_diag, Cont_diag, MIS, MEKE, &
                                       OBC, update_OBC_CSp, ALE_CSp, setVisc_CSp, &
-                                      visc, dirs, ntrunc)
+                                      visc, dirs, ntrunc, cont_stencil)
   type(ocean_grid_type),                     intent(inout) :: G    !< The ocean's grid structure.
   type(verticalGrid_type),                   intent(in)    :: GV   !< The ocean's vertical grid structure.
   type(unit_scale_type),                     intent(in)    :: US   !< A dimensional unit scaling type
@@ -551,6 +551,8 @@ subroutine initialize_dyn_unsplit_RK2(u, v, h, Time, G, GV, US, param_file, diag
   integer, target,                           intent(inout) :: ntrunc !< A target for the variable
                                                        !! that records the number of times the
                                                        !! velocity is truncated (this should be 0).
+  integer,                         optional, intent(out)   :: cont_stencil !< The stencil for
+                                                       !! thickness from the continuity solver.
 
   !   This subroutine initializes all of the variables that are used by this
   ! dynamic core, including diagnostics and the cpu clocks.
@@ -610,6 +612,7 @@ subroutine initialize_dyn_unsplit_RK2(u, v, h, Time, G, GV, US, param_file, diag
   Accel_diag%CAu => CS%CAu ; Accel_diag%CAv => CS%CAv
 
   call continuity_init(Time, G, GV, US, param_file, diag, CS%continuity_CSp)
+  if (present(cont_stencil)) cont_stencil = continuity_stencil(CS%continuity_CSp)
   call CoriolisAdv_init(Time, G, GV, US, param_file, diag, CS%ADp, CS%CoriolisAdv_CSp)
   if (use_tides) call tidal_forcing_init(Time, G, param_file, CS%tides_CSp)
   call PressureForce_init(Time, G, GV, US, param_file, diag, CS%PressureForce_CSp, &

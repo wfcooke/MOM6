@@ -261,7 +261,11 @@ subroutine neutral_diffusion_calc_coeffs(G, GV, h, T, S, CS)
   real, dimension(SZI_(G), SZJ_(G)) :: hEff_sum ! Summed effective face thicknesses [H ~> m or kg m-2]
   integer :: iMethod
   real, dimension(SZI_(G)) :: ref_pres ! Reference pressure used to calculate alpha/beta
-  real :: h_neglect, h_neglect_edge
+  real :: h_neglect, h_neglect_edge    ! Negligible thicknesses [H ~> m or kg m-2]
+  real :: pa_to_H                      ! A conversion factor from Pa to H [H Pa-1 ~> m Pa-1 or s2 m-2]
+
+  pa_to_H = 1. / GV%H_to_pa
+
 
   if (.not.CS%remap_answers_2018) then
     h_neglect = GV%H_subroundoff ; h_neglect_edge = GV%H_subroundoff
@@ -339,15 +343,15 @@ subroutine neutral_diffusion_calc_coeffs(G, GV, h, T, S, CS)
     else ! Discontinuous reconstruction
       do k = 1, G%ke
         if (CS%ref_pres<0) ref_pres(:) = CS%Pint(:,j,k)
-        if (CS%stable_cell(i,j,k)) &
-          call calculate_density_derivs(CS%T_i(:,j,k,1), CS%S_i(:,j,k,1), ref_pres, &
-                                        CS%dRdT_i(:,j,k,1), CS%dRdS_i(:,j,k,1), G%isc-1, G%iec-G%isc+3, CS%EOS)
+        ! Calculate derivatives for the top interface
+        call calculate_density_derivs(CS%T_i(:,j,k,1), CS%S_i(:,j,k,1), ref_pres, &
+                                      CS%dRdT_i(:,j,k,1), CS%dRdS_i(:,j,k,1), G%isc-1, G%iec-G%isc+3, CS%EOS)
         if (CS%ref_pres<0) then
           ref_pres(:) = CS%Pint(:,j,k+1)
         endif
-        if (CS%stable_cell(i,j,k)) &
-          call calculate_density_derivs(CS%T_i(:,j,k,2), CS%S_i(:,j,k,2), ref_pres, &
-                                        CS%dRdT_i(:,j,k,2), CS%dRdS_i(:,j,k,2), G%isc-1, G%iec-G%isc+3, CS%EOS)
+        ! Calcualte derivatives at the bottom interface
+        call calculate_density_derivs(CS%T_i(:,j,k,2), CS%S_i(:,j,k,2), ref_pres, &
+                                      CS%dRdT_i(:,j,k,2), CS%dRdS_i(:,j,k,2), G%isc-1, G%iec-G%isc+3, CS%EOS)
       enddo
     endif
   enddo
