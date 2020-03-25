@@ -10,3 +10,7 @@
 [submodule "pkg/geoKdTree"]
 	path = pkg/geoKdTree
 	url = https://github.com/travissluka/geoKdTree.git
+[submodule "pkg/ECDA"]
+	path = pkg/ECDA
+	url = https://gitlab.gfdl.noaa.gov/Feiyu.Lu/ECDA.git
+	branch = GFDL
