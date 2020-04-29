@@ -301,17 +301,18 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
     call safe_alloc_ptr(fluxes%TKE_tidal,isd,ied,jsd,jed)
     call safe_alloc_ptr(fluxes%ustar_tidal,isd,ied,jsd,jed)
 
-    if (CS%allow_flux_adjustments) then
-      call safe_alloc_ptr(fluxes%heat_added,isd,ied,jsd,jed)
-      call safe_alloc_ptr(fluxes%salt_flux_added,isd,ied,jsd,jed)
-    endif
+    !if (CS%allow_flux_adjustments) then
+    !  call safe_alloc_ptr(fluxes%heat_added,isd,ied,jsd,jed)
+    !  call safe_alloc_ptr(fluxes%salt_flux_added,isd,ied,jsd,jed)
+    !endif
 
     do j=js-2,je+2 ; do i=is-2,ie+2
       fluxes%TKE_tidal(i,j)   = CS%TKE_tidal(i,j)
       fluxes%ustar_tidal(i,j) = CS%ustar_tidal(i,j)
     enddo ; enddo
 
-    if (CS%restore_temp) call safe_alloc_ptr(fluxes%heat_added,isd,ied,jsd,jed)
+    !if (CS%restore_temp) 
+    call safe_alloc_ptr(fluxes%heat_added,isd,ied,jsd,jed)
 
   endif   ! endif for allocation and initialization
 
@@ -342,10 +343,10 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
   fluxes%fluxes_used = .false.
   fluxes%dt_buoy_accum = US%s_to_T*valid_time
 
-  if (CS%allow_flux_adjustments) then
+  !if (CS%allow_flux_adjustments) then
     fluxes%heat_added(:,:) = 0.0
     fluxes%salt_flux_added(:,:) = 0.0
-  endif
+  !endif
 
   do j=js,je ; do i=is,ie
     fluxes%salt_flux(i,j) = 0.0
@@ -376,9 +377,10 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
           fluxes%saltFluxGlobalAdj = 0.
         else
           work_sum(is:ie,js:je) = US%L_to_m**2*US%RZ_T_to_kg_m2s * &
-                  G%areaT(is:ie,js:je)*fluxes%salt_flux(is:ie,js:je)
+                  G%areaT(is:ie,js:je)*fluxes%salt_flux(is:ie,js:je)  * G%mask2dT(is:ie,js:je)
           fluxes%saltFluxGlobalAdj = reproducing_sum(work_sum(:,:), isr,ier, jsr,jer)/CS%area_surf
-          fluxes%salt_flux(is:ie,js:je) = fluxes%salt_flux(is:ie,js:je) - kg_m2_s_conversion * fluxes%saltFluxGlobalAdj
+          fluxes%salt_flux(is:ie,js:je) = fluxes%salt_flux(is:ie,js:je) - &
+                     kg_m2_s_conversion * fluxes%saltFluxGlobalAdj * G%mask2dT(is:ie,js:je)
         endif
       endif
       fluxes%salt_flux_added(is:ie,js:je) = fluxes%salt_flux(is:ie,js:je) ! Diagnostic
@@ -413,6 +415,11 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
   if (CS%restore_temp) then
     call time_interp_external(CS%id_trestore,Time,data_restore)
     do j=js,je ; do i=is,ie
+!! x1y added from Yongfei for considering ice freezing point with SSS
+      if (abs(data_restore(i,j)+1.8)<0.0001) then
+          data_restore(i,j) = -0.0539*sfc_state%SSS(i,j)
+      endif
+
       delta_sst = data_restore(i,j)- sfc_state%SST(i,j)
       delta_sst = sign(1.0,delta_sst)*min(abs(delta_sst),CS%max_delta_trestore)
       fluxes%heat_added(i,j) = G%mask2dT(i,j) * CS%trestore_mask(i,j) * &

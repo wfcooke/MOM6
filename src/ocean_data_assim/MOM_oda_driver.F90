@@ -25,6 +25,7 @@ module MOM_oda_driver_mod
   use mpp_mod, only : set_current_pelist => mpp_set_current_pelist
   use mpp_mod, only : mpp_sync_self
   use mpp_mod, only : mpp_clock_id, mpp_clock_begin, mpp_clock_end
+  use mpp_mod, only : input_nml_file
   use mpp_io_mod, only : MPP_SINGLE,MPP_MULTI
   use mpp_domains_mod, only : domain2d, mpp_global_field, mpp_update_domains
   use mpp_domains_mod, only : mpp_get_compute_domain, mpp_get_data_domain
@@ -193,10 +194,15 @@ contains
     if (associated(CS)) call mpp_error(FATAL,'Calling oda_init with associated control structure')
     allocate(CS)
 
+#ifdef INTERNAL_FILE_NML
+    read (input_nml_file, oda_init_nml, iostat=io_status)
+    ierr = check_nml_error (io_status, 'oda_init_nml')
+#else
     ioun = open_namelist_file()
     read(UNIT=ioun, NML=oda_init_nml, IOSTAT=io_status)
     ierr = check_nml_error(io_status,'oda_init_nml')
     call close_file(ioun)
+#endif
     CS%do_bias_correction = do_bias_correction
     CS%correction_multiplier = correction_multiplier
     CS%write_obs = write_obs
@@ -499,7 +505,7 @@ contains
     real :: missing_value
     integer,dimension(3) :: fld_sz
 
-    if(is_root_pe()) print *, 'Getting bias correction'
+    !if(is_root_pe()) print *, 'Getting bias correction'
 
     call mpp_clock_begin(id_clock_bias_correction)
     call horiz_interp_and_extrap_tracer(CS%INC_CS%T_id,Time,1.0,CS%G,T_bias,&
@@ -606,10 +612,10 @@ contains
     if (Time >= CS%Time) then
       CS%Time=increment_time(CS%Time,CS%assim_frequency*seconds_per_hour)
 
-      call get_date(Time, yr, mon, day, hr, min, sec)
-      if(is_root_pe()) print *, 'Model Time: ', yr, mon, day, hr, min, sec
-      call get_date(CS%time, yr, mon, day, hr, min, sec)
-      if(is_root_pe()) print *, 'Assimilation Time: ', yr, mon, day, hr, min, sec
+      !call get_date(Time, yr, mon, day, hr, min, sec)
+      !if(is_root_pe()) print *, 'Model Time: ', yr, mon, day, hr, min, sec
+      !call get_date(CS%time, yr, mon, day, hr, min, sec)
+      !if(is_root_pe()) print *, 'Assimilation Time: ', yr, mon, day, hr, min, sec
     endif
 
     if (CS%Time < Time) then

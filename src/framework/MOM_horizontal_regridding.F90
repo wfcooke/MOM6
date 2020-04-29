@@ -873,7 +873,7 @@ subroutine horiz_interp_and_extrap_tracer_fms_id(fms_id,  Time, conversion, G, t
 
     enddo ! kd
   else
-      call time_interp_external(fms_id, Time, data_in, verbose=.true.)
+      call time_interp_external(fms_id, Time, data_in, verbose=.false.)
       do k=1,kd
         do j=js,je
           do i=is,ie
