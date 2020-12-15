@@ -113,6 +113,8 @@ type, public :: surface_forcing_CS ; private
                                 !! salinity to a specified value.
   logical :: restore_temp       !< If true, the coupled MOM driver adds a term to restore sea
                                 !! surface temperature to a specified value.
+  logical :: adjust_restore_sst_tfreeze     !< If True, the surface temperature restoring data near the freezing
+                                            !! point are approximated using salinity
   real    :: Flux_const                     !< Piston velocity for surface restoring [m s-1]
   real    :: Flux_const_salt                     !< Piston velocity for surface salt restoring [m s-1]
   real    :: Flux_const_temp                     !< Piston velocity for surface temp restoring [m s-1]
@@ -296,7 +298,10 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
 
     call safe_alloc_ptr(fluxes%salt_flux,isd,ied,jsd,jed)
     call safe_alloc_ptr(fluxes%salt_flux_in,isd,ied,jsd,jed)
-    call safe_alloc_ptr(fluxes%salt_flux_added,isd,ied,jsd,jed)
+
+    if (CS%salt_restore_as_sflux .or. CS%allow_flux_adjustments) &
+      call safe_alloc_ptr(fluxes%salt_flux_added,isd,ied,jsd,jed)
+
 
     call safe_alloc_ptr(fluxes%TKE_tidal,isd,ied,jsd,jed)
     call safe_alloc_ptr(fluxes%ustar_tidal,isd,ied,jsd,jed)
@@ -311,8 +316,8 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
       fluxes%ustar_tidal(i,j) = CS%ustar_tidal(i,j)
     enddo ; enddo
 
-    !if (CS%restore_temp) 
-    call safe_alloc_ptr(fluxes%heat_added,isd,ied,jsd,jed)
+    if (CS%allow_flux_adjustments .or. CS%restore_temp) &
+      call safe_alloc_ptr(fluxes%heat_added,isd,ied,jsd,jed)
 
   endif   ! endif for allocation and initialization
 
@@ -415,9 +420,10 @@ subroutine convert_IOB_to_fluxes(IOB, fluxes, index_bounds, Time, valid_time, G,
   if (CS%restore_temp) then
     call time_interp_external(CS%id_trestore,Time,data_restore)
     do j=js,je ; do i=is,ie
-!! x1y added from Yongfei for considering ice freezing point with SSS
-      if (abs(data_restore(i,j)+1.8)<0.0001) then
-          data_restore(i,j) = -0.0539*sfc_state%SSS(i,j)
+      !! x1y added from Yongfei for considering ice freezing point with SSS
+      if (CS%adjust_restore_sst_tfreeze) then
+        if (abs(data_restore(i,j)+1.8)<0.0001) &
+            data_restore(i,j) = -0.0539*sfc_state%SSS(i,j)
       endif
 
       delta_sst = data_restore(i,j)- sfc_state%SST(i,j)
@@ -1318,6 +1324,11 @@ subroutine surface_forcing_init(Time, G, US, param_file, diag, CS)
                  "If true, the coupled driver will add a  "//&
                  "heat flux that drives sea-surface temperature "//&
                  "toward specified values.", default=.false.)
+  if (CS%restore_temp) &
+    call get_param(param_file, mdl, "ADJUST_RESTORE_SST_TFREEZE", CS%adjust_restore_sst_tfreeze, &
+                 "If true, adjust the surface temperature restoring data  "//&
+                 "using a salinity-based freezing point approximation.", default=.false.)
+
   call get_param(param_file, mdl, "ADJUST_NET_SRESTORE_TO_ZERO", &
                  CS%adjust_net_srestore_to_zero, &
                  "If true, adjusts the salinity restoring seen to zero "//&
