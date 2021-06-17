@@ -514,10 +514,10 @@ subroutine neutral_diffusion_calc_coeffs(G, GV, US, h, T, S, CS, p_surf)
       ! This option is not recommended but needed to recover answers prior to Jan 2018.
       ! It is independent of the other 2018 answers flags.
       do k = 1, CS%nsurf-1 ; do j = G%jsc, G%jec ; do I = G%isc-1, G%iec
-        CS%uhEff(I,j,k) = CS%uhEff(I,j,k) / GV%H_to_pa
+        CS%uhEff(I,j,k) = CS%uhEff(I,j,k) /  (GV%H_to_RZ * GV%g_Earth)
       enddo ; enddo ; enddo
       do k = 1, CS%nsurf-1 ; do J = G%jsc-1, G%jec ; do i = G%isc, G%iec
-        CS%vhEff(I,j,k) = CS%vhEff(I,j,k) / GV%H_to_pa
+        CS%vhEff(I,j,k) = CS%vhEff(I,j,k) /  (GV%H_to_RZ * GV%g_Earth)
       enddo ; enddo ; enddo
     else
       do k = 1, CS%nsurf-1 ; do j = G%jsc, G%jec ; do I = G%isc-1, G%iec
