@@ -90,7 +90,7 @@ type, public :: tracer_flow_control_CS ; private
   logical :: use_pseudo_salt_tracer = .false.      !< If true, use the psuedo_salt tracer  package
   logical :: use_boundary_impulse_tracer = .false. !< If true, use the boundary impulse tracer package
   logical :: use_dyed_obc_tracer = .false.         !< If true, use the dyed OBC tracer package
-  logical :: use_nw2_tracers = .false.             !< If true, use the ideal age tracer package
+  logical :: use_nw2_tracers = .false.             !< If true, use the NW2 tracer package
   !>@{ Pointers to the control strucures for the tracer packages
   type(USER_tracer_example_CS), pointer :: USER_tracer_example_CSp => NULL()
   type(DOME_tracer_CS), pointer :: DOME_tracer_CSp => NULL()
@@ -158,7 +158,7 @@ subroutine call_tracer_register(HI, GV, US, param_file, CS, tr_Reg, restart_CS)
   type(tracer_registry_type),   pointer    :: tr_Reg     !< A pointer that is set to point to the
                                                          !! control structure for the tracer
                                                          !! advection and diffusion module.
-  type(MOM_restart_CS),         pointer    :: restart_CS !< A pointer to the restart control
+  type(MOM_restart_CS), intent(inout) :: restart_CS !< A pointer to the restart control
                                                          !! structure.
 
 
@@ -267,7 +267,7 @@ subroutine call_tracer_register(HI, GV, US, param_file, CS, tr_Reg, restart_CS)
   if (CS%use_dyed_obc_tracer) CS%use_dyed_obc_tracer = &
     register_dyed_obc_tracer(HI, GV, param_file, CS%dyed_obc_tracer_CSp, &
                              tr_Reg, restart_CS)
-  if (CS%use_nw2_tracers) CS%use_ideal_age = &
+  if (CS%use_nw2_tracers) CS%use_nw2_tracers = &
     register_nw2_tracers(HI, GV, param_file,  CS%nw2_tracers_CSp, tr_Reg, restart_CS)
 
 end subroutine call_tracer_register
@@ -310,7 +310,7 @@ subroutine tracer_flow_control_init(restart, day, G, GV, US, h, param_file, diag
 
 !  Add other user-provided calls here.
   if (CS%use_USER_tracer_example) &
-    call USER_initialize_tracer(restart, day, G, GV, h, diag, OBC, CS%USER_tracer_example_CSp, &
+    call USER_initialize_tracer(restart, day, G, GV, US, h, diag, OBC, CS%USER_tracer_example_CSp, &
                                 sponge_CSp)
   if (CS%use_DOME_tracer) &
     call initialize_DOME_tracer(restart, day, G, GV, US, h, diag, OBC, CS%DOME_tracer_CSp, &

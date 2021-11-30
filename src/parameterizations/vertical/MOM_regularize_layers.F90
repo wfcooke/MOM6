@@ -23,6 +23,7 @@ public regularize_layers, regularize_layers_init
 
 !> This control structure holds parameters used by the MOM_regularize_layers module
 type, public :: regularize_layers_CS ; private
+  logical :: initialized = .false. !< True if this control structure has been initialized.
   logical :: regularize_surface_layers !< If true, vertically restructure the
                              !! near-surface layers when they have too much
                              !! lateral variations to allow for sensible lateral
@@ -86,14 +87,14 @@ subroutine regularize_layers(h, tv, dt, ea, eb, G, GV, US, CS)
                                                   !! this should be increased due to mixed layer
                                                   !! entrainment [H ~> m or kg m-2].
   type(unit_scale_type),      intent(in)    :: US !< A dimensional unit scaling type
-  type(regularize_layers_CS), pointer       :: CS !< The control structure returned by a previous
-                                                  !! call to regularize_layers_init.
+  type(regularize_layers_CS), intent(in)    :: CS !< Regularize layer control struct
+
   ! Local variables
   integer :: i, j, k, is, ie, js, je, nz
 
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec ; nz = GV%ke
 
-  if (.not. associated(CS)) call MOM_error(FATAL, "MOM_regularize_layers: "//&
+  if (.not. CS%initialized) call MOM_error(FATAL, "MOM_regularize_layers: "//&
          "Module must be initialized before it is used.")
 
   if (CS%regularize_surface_layers) then
@@ -123,8 +124,8 @@ subroutine regularize_surface(h, tv, dt, ea, eb, G, GV, US, CS)
                                                   !! this should be increased due to mixed layer
                                                   !! entrainment [H ~> m or kg m-2].
   type(unit_scale_type),      intent(in)    :: US !< A dimensional unit scaling type
-  type(regularize_layers_CS), pointer       :: CS !< The control structure returned by a previous
-                                                  !! call to regularize_layers_init.
+  type(regularize_layers_CS), intent(in)    :: CS !< Regularize layer control struct
+
   ! Local variables
   real, dimension(SZIB_(G),SZJ_(G)) :: &
     def_rat_u   ! The ratio of the thickness deficit to the minimum depth [nondim].
@@ -194,7 +195,7 @@ subroutine regularize_surface(h, tv, dt, ea, eb, G, GV, US, CS)
 
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec ; nz = GV%ke
 
-  if (.not. associated(CS)) call MOM_error(FATAL, "MOM_regularize_layers: "//&
+  if (.not. CS%initialized) call MOM_error(FATAL, "MOM_regularize_layers: "//&
          "Module must be initialized before it is used.")
 
   if (GV%nkml<1) return
@@ -219,7 +220,7 @@ subroutine regularize_surface(h, tv, dt, ea, eb, G, GV, US, CS)
     e(i,j,K+1) = e(i,j,K) - h(i,j,k)
   enddo ; enddo ; enddo
 
-  call find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, h=h)
+  call find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, h)
 
   ! Determine which columns are problematic
   do j=js,je ; do_j(j) = .false. ; enddo
@@ -612,8 +613,7 @@ end subroutine regularize_surface
 !! thickness at velocity points differ from the arithmetic means, relative to
 !! the the arithmetic means, after eliminating thickness variations that are
 !! solely due to topography and aggregating all interior layers into one.
-subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
-                               def_rat_u_2lay, def_rat_v_2lay, halo, h)
+subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, h)
   type(ocean_grid_type),      intent(in)  :: G         !< The ocean's grid structure.
   type(verticalGrid_type),    intent(in)  :: GV        !< The ocean's vertical grid structure.
   real, dimension(SZI_(G),SZJ_(G),SZK_(GV)+1), &
@@ -624,32 +624,19 @@ subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
   real, dimension(SZI_(G),SZJB_(G)),          &
                               intent(out) :: def_rat_v !< The thickness deficit ratio at v points,
                                                        !! [nondim].
-  type(regularize_layers_CS), pointer     :: CS        !< The control structure returned by a
-                                                       !! previous call to regularize_layers_init.
-  real, dimension(SZIB_(G),SZJ_(G)),          &
-                    optional, intent(out) :: def_rat_u_2lay !< The thickness deficit ratio at u
-                                                       !! points when the mixed and buffer layers
-                                                       !! are aggregated into 1 layer [nondim].
-  real, dimension(SZI_(G),SZJB_(G)),          &
-                    optional, intent(out) :: def_rat_v_2lay !< The thickness deficit ratio at v
-                                                       !! pointswhen the mixed and buffer layers
-                                                       !! are aggregated into 1 layer [nondim].
-  integer,          optional, intent(in)  :: halo      !< An extra-wide halo size, 0 by default.
+  type(regularize_layers_CS), intent(in)  :: CS        !< Regularize layer control struct
   real, dimension(SZI_(G),SZJ_(G),SZK_(GV)),  &
-                    optional, intent(in)  :: h         !< Layer thicknesses [H ~> m or kg m-2].
-                                                       !! If h is not present, vertical differences
-                                                       !! in interface heights are used instead.
+                              intent(in)  :: h         !< Layer thicknesses [H ~> m or kg m-2].
+
   ! Local variables
   real, dimension(SZIB_(G),SZJ_(G)) :: &
     h_def_u, &  ! The vertically summed thickness deficits at u-points [H ~> m or kg m-2].
-    h_norm_u, & ! The vertically summed arithmetic mean thickness by which
+    h_norm_u    ! The vertically summed arithmetic mean thickness by which
                 ! h_def_u is normalized [H ~> m or kg m-2].
-    h_def2_u
   real, dimension(SZI_(G),SZJB_(G)) :: &
     h_def_v, &  ! The vertically summed thickness deficits at v-points [H ~> m or kg m-2].
-    h_norm_v, & ! The vertically summed arithmetic mean thickness by which
+    h_norm_v    ! The vertically summed arithmetic mean thickness by which
                 ! h_def_v is normalized [H ~> m or kg m-2].
-    h_def2_v
   real :: h_neglect ! A thickness that is so small it is usually lost
                     ! in roundoff and can be neglected [H ~> m or kg m-2].
   real :: Hmix_min  ! A local copy of CS%Hmix_min [H ~> m or kg m-2].
@@ -657,9 +644,6 @@ subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
   integer :: i, j, k, is, ie, js, je, nz, nkmb
 
   is = G%isc ; ie = G%iec ; js = G%jsc ; je = G%jec ; nz = GV%ke
-  if (present(halo)) then
-    is = G%isc-halo ; ie = G%iec+halo ; js = G%jsc-halo ; je = G%jec+halo
-  endif
   nkmb = GV%nk_rho_varies
   h_neglect = GV%H_subroundoff
   Hmix_min = CS%Hmix_min
@@ -677,22 +661,8 @@ subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
     h_def_u(I,j) = 0.5*(h1-h2)**2 / ((h1 + h2) + h_neglect)
     h_norm_u(I,j) = 0.5*(h1+h2)
   enddo ; enddo
-  if (present(def_rat_u_2lay)) then ; do j=js,je ; do I=is-1,ie
-    ! This is a particular metric of the aggregation into two layers.
-    h1 = e(i,j,1)-e(i,j,nkmb+1) ; h2 = e(i+1,j,1)-e(i+1,j,nkmb+1)
-    if (e(i,j,nkmb+1) < e(i+1,j,nz+1)) then
-      if (h1 > h2) h1 = max(e(i,j,1)-e(i+1,j,nz+1), h2)
-    elseif (e(i+1,j,nkmb+1) < e(i,j,nz+1)) then
-      if (h2 > h1) h2 = max(e(i+1,j,1)-e(i,j,nz+1), h1)
-    endif
-    h_def2_u(I,j) = h_def_u(I,j) + 0.5*(h1-h2)**2 / ((h1 + h2) + h_neglect)
-  enddo ; enddo ; endif
   do k=1,nkmb ; do j=js,je ; do I=is-1,ie
-    if (present(h)) then
-      h1 = h(i,j,k) ; h2 = h(i+1,j,k)
-    else
-      h1 = e(i,j,K)-e(i,j,K+1) ; h2 = e(i+1,j,K)-e(i+1,j,K+1)
-    endif
+    h1 = h(i,j,k) ; h2 = h(i+1,j,k)
     ! Thickness deficits can not arise simply because a layer's bottom is bounded
     ! by the bathymetry.
     if (e(i,j,K+1) < e(i+1,j,nz+1)) then
@@ -703,15 +673,10 @@ subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
     h_def_u(I,j) = h_def_u(I,j) + 0.5*(h1-h2)**2 / ((h1 + h2) + h_neglect)
     h_norm_u(I,j) = h_norm_u(I,j) + 0.5*(h1+h2)
   enddo ; enddo ; enddo
-  if (present(def_rat_u_2lay)) then ; do j=js,je ; do I=is-1,ie
+  do j=js,je ; do I=is-1,ie
     def_rat_u(I,j) = G%mask2dCu(I,j) * h_def_u(I,j) / &
                      (max(Hmix_min, h_norm_u(I,j)) + h_neglect)
-    def_rat_u_2lay(I,j) = G%mask2dCu(I,j) * h_def2_u(I,j) / &
-                          (max(Hmix_min, h_norm_u(I,j)) + h_neglect)
-  enddo ; enddo ; else ; do j=js,je ; do I=is-1,ie
-    def_rat_u(I,j) = G%mask2dCu(I,j) * h_def_u(I,j) / &
-                     (max(Hmix_min, h_norm_u(I,j)) + h_neglect)
-  enddo ; enddo ; endif
+  enddo ; enddo
 
   ! Determine which meridional faces are problematic.
   do J=js-1,je ; do i=is,ie
@@ -726,22 +691,8 @@ subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
     h_def_v(i,J) = 0.5*(h1-h2)**2 / ((h1 + h2) + h_neglect)
     h_norm_v(i,J) = 0.5*(h1+h2)
   enddo ; enddo
-  if (present(def_rat_v_2lay)) then ; do J=js-1,je ; do i=is,ie
-    ! This is a particular metric of the aggregation into two layers.
-    h1 = e(i,j,1)-e(i,j,nkmb+1) ; h2 = e(i,j+1,1)-e(i,j+1,nkmb+1)
-    if (e(i,j,nkmb+1) < e(i,j+1,nz+1)) then
-      if (h1 > h2) h1 = max(e(i,j,1)-e(i,j+1,nz+1), h2)
-    elseif (e(i,j+1,nkmb+1) < e(i,j,nz+1)) then
-      if (h2 > h1) h2 = max(e(i,j+1,1)-e(i,j,nz+1), h1)
-    endif
-    h_def2_v(i,J) = h_def_v(i,J) + 0.5*(h1-h2)**2 / ((h1 + h2) + h_neglect)
-  enddo ; enddo ; endif
   do k=1,nkmb ; do J=js-1,je ; do i=is,ie
-    if (present(h)) then
-      h1 = h(i,j,k) ; h2 = h(i,j+1,k)
-    else
-      h1 = e(i,j,K)-e(i,j,K+1) ; h2 = e(i,j+1,K)-e(i,j+1,K+1)
-    endif
+    h1 = h(i,j,k) ; h2 = h(i,j+1,k)
     ! Thickness deficits can not arise simply because a layer's bottom is bounded
     ! by the bathymetry.
     if (e(i,j,K+1) < e(i,j+1,nz+1)) then
@@ -752,15 +703,10 @@ subroutine find_deficit_ratios(e, def_rat_u, def_rat_v, G, GV, CS, &
     h_def_v(i,J) = h_def_v(i,J) + 0.5*(h1-h2)**2 / ((h1 + h2) + h_neglect)
     h_norm_v(i,J) = h_norm_v(i,J) + 0.5*(h1+h2)
   enddo ; enddo ; enddo
-  if (present(def_rat_v_2lay)) then ; do J=js-1,je ; do i=is,ie
+  do J=js-1,je ; do i=is,ie
     def_rat_v(i,J) = G%mask2dCv(i,J) * h_def_v(i,J) / &
                       (max(Hmix_min, h_norm_v(i,J)) + h_neglect)
-    def_rat_v_2lay(i,J) = G%mask2dCv(i,J) * h_def2_v(i,J) / &
-                      (max(Hmix_min, h_norm_v(i,J)) + h_neglect)
-  enddo ; enddo ; else ; do J=js-1,je ; do i=is,ie
-    def_rat_v(i,J) = G%mask2dCv(i,J) * h_def_v(i,J) / &
-                      (max(Hmix_min, h_norm_v(i,J)) + h_neglect)
-  enddo ; enddo ; endif
+  enddo ; enddo
 
 end subroutine find_deficit_ratios
 
@@ -773,8 +719,8 @@ subroutine regularize_layers_init(Time, G, GV, param_file, diag, CS)
                                                  !! run-time parameters.
   type(diag_ctrl), target, intent(inout) :: diag !< A structure that is used to regulate
                                                  !! diagnostic output.
-  type(regularize_layers_CS), pointer    :: CS   !< A pointer that is set to point to the
-                                                 !! control structure for this module.
+  type(regularize_layers_CS), intent(inout) :: CS !< Regularize layer control struct
+
 #include "version_variable.h"
   character(len=40)  :: mdl = "MOM_regularize_layers"  ! This module's name.
   logical :: use_temperature
@@ -783,11 +729,7 @@ subroutine regularize_layers_init(Time, G, GV, param_file, diag, CS)
   integer :: isd, ied, jsd, jed
   isd = G%isd ; ied = G%ied ; jsd = G%jsd ; jed = G%jed
 
-  if (associated(CS)) then
-    call MOM_error(WARNING, "regularize_layers_init called with an associated"// &
-                            "associated control structure.")
-    return
-  else ; allocate(CS) ; endif
+  CS%initialized = .true.
 
   CS%diag => diag
   CS%Time => Time
